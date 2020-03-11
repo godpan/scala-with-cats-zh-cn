@@ -134,3 +134,4 @@ Type class是一种编程范式源自于Haskell，它允许我们不通过传统
 ## 1.1 剖析Type class
 
 Type class模式由三个主要模块组成，
+
