@@ -133,5 +133,126 @@ Type class是一种编程范式源自于Haskell，它允许我们不通过传统
 
 ## 1.1 剖析Type class
 
-Type class模式由三个主要模块组成，
+Type class模式主要由3个模块组成：
+
+- Type class self
+- Type class Instances
+- Type class interface
+
+**1.1.1 The Type Class**
+
+Type class可以看成一个接口或者API，用于定义我们想要实现功能。在Cats中，Type class相当于至少带有一个类型参数的trait。举个例子，我们可以通过以下的代码描述一个基本的功能：“序列化成JSON”。
+
+```scala
+// Define a very simple JSON AST 声明一些简单的JSON AST
+sealed trait Json
+final case class JsObject(get: Map[String, Json]) extends Json 
+final case class JsString(get: String) extends Json
+final case class JsNumber(get: Double) extends Json
+case object JsNull extends Json
+
+// The "serialize to JSON" behaviour is encoded in this trait 序列话JSON方法定义在这个Trait里
+trait JsonWriter[A] {
+  def write(value: A): Json
+}
+```
+
+ 这个例子中JsonWriter就是我们定义的一个type class，上述代码中还包含Json类型相关的代码。
+
+**1.1.2 Type Class Instances**
+
+Type Class 实例就是对特定类型的Type Class的实现，包括Scala的基本类型以及我们自己定义的类型。
+
+在Scala中，我们通过创建一个Type Class的实现来进行Type Class 实例的声明，并用**implicit**这个关键词进行标记：
+
+```scala
+final case class Person(name: String, email: String)
+object JsonWriterInstances {
+  implicit val stringWriter: JsonWriter[String] =
+    new JsonWriter[String] {
+      def write(value: String): Json =
+        JsString(value)
+    }
+  implicit val personWriter: JsonWriter[Person] =
+    new JsonWriter[Person] {
+      def write(value: Person): Json =
+        JsObject(Map(
+          "name" -> JsString(value.name),
+          "email" -> JsString(value.email)
+        ))
+}
+// etc...
+}
+```
+
+**1.1.3 Type Class Interfaces**
+
+Type Class  Interface包含对我们想要对外部暴露的功能。interfaces是指接受 type class instance 作为 `implicit` 参数的泛型方法。
+
+通常有两种方式去创建interface：
+
+- *Interface Objects*
+- *Interface Syntax*
+
+**Interface Objects**
+
+创建interface最简单的方式就是将方法放在一个单例object中：
+
+```scala
+object Json {
+  def toJson[A](value: A)(implicit w: JsonWriter[A]): Json = w.write(value)
+}
+```
+
+在使用之前，我们需要导入我们所需的type class instances，然后就可以调用相关的方法：
+
+```scala
+import JsonWriterInstances._
+Json.toJson(Person("Dave", "dave@example.com"))
+// res4: Json = JsObject(Map(name -> JsString(Dave), email -> JsString
+     (dave@example.com)))
+```
+
+这里我们并没有指定对应的implicit parameters，但是编译器会帮我们在导入的type class instances中寻找一个跟相应类型匹配的type class instance，并插入对应的位置：
+
+```scala
+Json.toJson(Person("Dave", "dave@example.com"))(personWriter)
+```
+
+**Interface Syntax**
+
+我们也可以使用扩展方法使已存在的类型拥有interface methods，在Cats中将此称为“*syntax*”：
+
+```scala
+object JsonSyntax {
+  implicit class JsonWriterOps[A](value: A) {
+    def toJson(implicit w: JsonWriter[A]): Json =
+      w.write(value)
+  } 
+}
+```
+
+使用interface syntax之前，我们除了导入它本身以外，还需导入我们所需的type class instance：
+
+```scala
+import JsonWriterInstances._
+import JsonSyntax._
+Person("Dave", "dave@example.com").toJson
+// res6: Json = JsObject(Map(name -> JsString(Dave), email -> JsString
+     (dave@example.com)))
+```
+
+ 同样，编译器会自动帮我们寻找所需implicit parameters并插入对应的位置：
+
+```scala
+Person("Dave", "dave@example.com").toJson(personWriter)
+```
+
+**The implicitly Method**
+
+Scala标准库提供了一个泛型的type class interface叫做implicitly，它的声明非常简单：
+
+```scala
+ def implicitly[A](implicit value: A): A = value
+```
 
