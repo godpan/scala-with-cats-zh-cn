@@ -256,3 +256,32 @@ Scala标准库提供了一个泛型的type class interface叫做implicitly，它
  def implicitly[A](implicit value: A): A = value
 ```
 
+它接收一个implicit参数并返回该参数，我们可以使用implicitly调用implicit scope中的任意值，只需要指定对应的类型无需其他操作，便能得到对应的instance对象。
+
+```scala
+import JsonWriterInstances._
+// import JsonWriterInstances._
+implicitly[JsonWriter[String]]
+// res8: JsonWriter[String] = JsonWriterInstances$$anon$1@38563298
+```
+
+在Cats中，大多数type class都提供了其他方式去调用对应的instance。但是在代码调试过程中，implicitly有着很大的用处。我们可以在代码中插入implicitly相关代码，来确保编译器能找到对应的type class instance（若无对应的type class instance则编译的时候会抱错）以及不会出现歧义性（比如implicit scope存在两个相同的type class instance）。
+
+**1.2 Working with Implicits**
+
+对于Scala来说，使用type class就得跟 implicit values 和implicit parameters打交道，为了更好的使用它，我们需要了解以下几个点。
+
+**1.2.1 Packaging Implicits**
+
+奇怪的是,在Scala中任何标记为implicit的定义都必须放在object或trait中，而不是放在顶层。在上一小节的例子中，我们将所有的type class instances打包放在JsonWriterInstances中。同样我们也可以把它放在JsonWriter的伴生对象中，这种方式在Scala中有特殊的含义，因为这些instances会直接在*implicit scope*里面，无需单独导入。
+
+**1.2.2 Implicit Scope**
+
+正如我们看到的一样，编译器会自动寻找对应类型的type class instances，举个例子，下面这个例子就会编译器就会自动寻找**JsonWriter[String]**对应的instance
+
+```scala
+Json.toJson("A string!")
+```
+
+
+
