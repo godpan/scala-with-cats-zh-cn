@@ -277,11 +277,17 @@ implicitly[JsonWriter[String]]
 
 **1.2.2 Implicit Scope**
 
-正如我们看到的一样，编译器会自动寻找对应类型的type class instances，举个例子，下面这个例子就会编译器就会自动寻找**JsonWriter[String]**对应的instance
+正如我们看到的一样，编译器会自动寻找对应类型的type class instances，举个例子，下面这个例子就会编译器就会自动寻找**JsonWriter[String]**对应的instance：
 
 ```scala
 Json.toJson("A string!")
 ```
+
+编译器会从以下几个*implicit scope*中寻找适合的instance：
+
+- 自身及继承范围内的instance
+- 导入范围内的instance
+- 对应type class以及参数类型的伴生对象中
 
 
 
