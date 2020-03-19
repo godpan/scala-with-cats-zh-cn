@@ -352,5 +352,27 @@ implicit def optionWriter[A](implicit writer: JsonWriter[A]): JsonWriter[Option[
  }
 ```
 
+这个方法包含一个implicit参数writer，并通过它来构造一个Option[A]的JsonWriter instance。我们来看一个表达式：
 
+```scala
+Json.toJson(Option("A string"))
+```
+
+编译器首先会去寻找对应的type class instance，这里是optionWriter[String]，所以为表达式加上对应的implicit参数：
+
+```scala
+Json.toJson(Option("A string"))(optionWriter[String])
+```
+
+因为这里optionWriter是用implicit def声明的，而且需要一个implicit writer: JsonWriter[A]参数，所以编译器会继续寻找，这里的对应instance是stringWriter，最终完整的表达式：
+
+```scala
+Json.toJson(Option("A string"))(optionWriter(stringWriter))
+```
+
+通过这种方式，编译器会在引入的implicit scope中竟可能的寻找符合的instance，最终组合成所需要类型的type class instance。
+
+> *Implicit Conversions*
+>
+> 在我们使用implicit def构建type class instance的时候，我们使用implicit参数，如果我们不使用implicit声明参数，编译器则不会
 
