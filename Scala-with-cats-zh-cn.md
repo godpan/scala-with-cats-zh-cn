@@ -289,5 +289,68 @@ Json.toJson("A string!")
 - 导入范围内的instance
 - 对应type class以及参数类型的伴生对象中
 
+只有用implicit关键词标注的instance才会在*implicit scope*，而且如果编译器在引入的implicit scope中发现重复的instance声明，则会编译抱错：
+
+```scala
+implicit val writer1: JsonWriter[String] =
+  JsonWriterInstances.stringWriter
+implicit val writer2: JsonWriter[String] =
+  JsonWriterInstances.stringWriter
+Json.toJson("A string")
+
+// <console>:23: error: ambiguous implicit values:
+// both value stringWriter in object JsonWriterInstances of type => JsonWriter[String]
+//  and value writer1 of type => JsonWriter[String]
+// match expected type JsonWriter[String] 
+// Json.toJson("A string")
+//
+```
+
+但Scala中的*implicit*规则远比这复杂的多，但这些不在本书的讨论范围之内（如果你想对*implicit*有更深入的了解，可以参考这些内容：[this Stack Overflow post on implicit scope](https://stackoverflow.com/questions/5598085/where-does-scala-look-for-implicits)和[this blog post on implicit priority](http://eed3si9n.com/revisiting-implicits-without-import-tax)）。对于我们来说，通常把type class instances放在以下四个地方：
+
+1. 一个单独的object中，比如上面提到的JsonWriterInstances；
+2. 一个单独的trait中；
+3. type class的伴生对象中；
+4. 我们所使用类型的伴生对象中，比如JsonWriter[A]，即A的伴生对象中；
+
+如果是第一种方式的，我们在使用之前通过import导入，第二种方式的话通过继承trait引入，另外两种方式的，无需单独导入，它们默认就在对应类型的implicit scope中。
+
+**1.2.3 Recursive Implicit Resolu􏰀on**
+
+编译器除了能直接寻找对应类型type class instance，还拥有组合type class instance的能力。
+
+之前我们都是通过 implicit val来声明type class instances ，这非常简单，实际上我们有两种方式去声明instances：
+
+1. 通过 implicit val来声明具体类型的type class instances；
+2. 利用 implicit methods通过其他类型的type class instances来生成新的instances；
+
+我们为什么要通过其他类型的type class instances来生成新的instances呢？一个很明显的例子，我们如何让Option类型可以应用JsonWriter这个type class。对于系统中的任意类型的Option[A]，都得需要有对应的type class instance，我们可能会尝试通过声明所有instance：
+
+```scala
+implicit val optionIntWriter: JsonWriter[Option[Int]] = ???
+implicit val optionPersonWriter: JsonWriter[Option[Person]] = ???
+// and so on...
+```
+
+显然，这种方式是不易扩展的，对于系统中的任意类型A，我们都必须去声明两个instance，一个作用于A，一个作用于Option[A]。
+
+幸运的是，我们可以基于A的instance来构造Option[A]的instance，而且这是一个通用逻辑：
+
+- 假如option是Some(a: A)，则使用A的instance；
+- 假如option是None，则返回JsNull；
+
+我们通过implicit def来实现：
+
+```scala
+implicit def optionWriter[A](implicit writer: JsonWriter[A]): JsonWriter[Option[A]] =
+  new JsonWriter[Option[A]] {
+    def write(option: Option[A]): Json =
+      option match {
+        case Some(aValue) => writer.write(aValue)
+        case None         => JsNull
+		} 
+ }
+```
+
 
 
