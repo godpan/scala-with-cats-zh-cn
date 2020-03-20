@@ -238,8 +238,7 @@ object JsonSyntax {
 import JsonWriterInstances._
 import JsonSyntax._
 Person("Dave", "dave@example.com").toJson
-// res6: Json = JsObject(Map(name -> JsString(Dave), email -> JsString
-     (dave@example.com)))
+// res6: Json = JsObject(Map(name -> JsString(Dave), email -> JsString(dave@example.com)))
 ```
 
  同样，编译器会自动帮我们寻找所需implicit parameters并插入对应的位置：
@@ -374,5 +373,42 @@ Json.toJson(Option("A string"))(optionWriter(stringWriter))
 
 > *Implicit Conversions*
 >
-> 在我们使用implicit def构建type class instance的时候，我们使用implicit参数，如果我们不使用implicit声明参数，编译器则不会
+> 在我们使用implicit def构建type class instance的时候，我们使用implicit参数，如果我们不使用implicit声明参数，编译器则不会自动去寻找填充参数。
+>
+> 使用implicit方法但是不使用implicit parameters在Scala中是另一种模式，叫做*implicit conversion*。跟之前内容中提到的Interface Syntax也是不同的，它是一个implicit class并使用扩展方法。implicit conversion是一种古老的编程模式，目前Scala已经不赞成使用了。而且当你使用该语法时，编译器会提出警告，如果你确定要使用，则需手动引入scala.language.implicitConversions：
+>
+> ```scala
+> implicit def optionWriter[A]
+> (writer: JsonWriter[A]): JsonWriter[Option[A]] =
+> ???
+> // <console>:18: warning: implicit conversion method optionWriter should be enabled
+> // by making the implicit value scala.language.implicitConversions visible.
+> // This can be achieved by adding the import clause 'import scala.language.implicitConversions'
+> // or by setting the compiler option -language: implicitConversions.
+> // See the Scaladoc for value scala.language.implicitConversions for a discussion
+> // why the feature should be explicitly enabled.
+> //
+> //     implicit def optionWriter[A]
+>                     ^
+> // error: No warnings can be incurred under -Xfatal-warnings.
+> ```
+>
+> 
+
+**1.3 Exercise: Printable Library**
+
+Scala可以通过toString方法将一个任意一个值转换成String。但是这种方式有一些缺陷：
+
+- 它对Scala中的每个类型都进行了实现，但是使用有很大限制；
+- 不能对特定类型进行特定的实现；
+
+让我们声明一个Printable type class去解决这些问题吧：
+
+1. 声明一个type class Printable[A]包含一个方法format，该方法接受一个类型为A的参数并返回String。
+2. 创建一个名为PrintableInstances的object，包含Printable[String]和Printable[Int]的instance声明。
+3. 创建一个名为Printable的object，包含两个泛型方法：
+   1. format方法：接受一个类型为A的参数和相关类型的Printable，使用Printable将参数转换为String。
+   2. print方法：与format方法参数一致，但返回值时Unit，它执行的操作时通过println将类型为A的参数输出到控制台。
+
+
 
