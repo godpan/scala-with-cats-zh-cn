@@ -131,7 +131,7 @@ Type class是一种编程范式源自于Haskell，它允许我们不通过传统
 
 
 
-## 1.1 剖析Type class
+### 1.1 剖析Type class
 
 Type class模式主要由3个模块组成：
 
@@ -139,7 +139,7 @@ Type class模式主要由3个模块组成：
 - Type class Instances
 - Type class interface
 
-**1.1.1 The Type Class**
+#### 1.1.1 The Type Class
 
 Type class可以看成一个接口或者API，用于定义我们想要实现功能。在Cats中，Type class相当于至少带有一个类型参数的trait。举个例子，我们可以通过以下的代码描述一个基本的功能：“序列化成JSON”。
 
@@ -159,7 +159,7 @@ trait JsonWriter[A] {
 
  这个例子中JsonWriter就是我们定义的一个type class，上述代码中还包含Json类型相关的代码。
 
-**1.1.2 Type Class Instances**
+#### 1.1.2 Type Class Instances
 
 Type Class 实例就是对特定类型的Type Class的实现，包括Scala的基本类型以及我们自己定义的类型。
 
@@ -185,16 +185,16 @@ object JsonWriterInstances {
 }
 ```
 
-**1.1.3 Type Class Interfaces**
+###$ 1.1.3 Type Class Interfaces
 
 Type Class  Interface包含对我们想要对外部暴露的功能。interfaces是指接受 type class instance 作为 `implicit` 参数的泛型方法。
 
 通常有两种方式去创建interface：
 
-- *Interface Objects*
-- *Interface Syntax*
+- Interface Objects
+- Interface Syntax
 
-**Interface Objects**
+##### Interface Objects
 
 创建interface最简单的方式就是将方法放在一个单例object中：
 
@@ -219,7 +219,7 @@ Json.toJson(Person("Dave", "dave@example.com"))
 Json.toJson(Person("Dave", "dave@example.com"))(personWriter)
 ```
 
-**Interface Syntax**
+##### Interface Syntax
 
 我们也可以使用扩展方法使已存在的类型拥有interface methods，在Cats中将此称为“*syntax*”：
 
@@ -247,7 +247,7 @@ Person("Dave", "dave@example.com").toJson
 Person("Dave", "dave@example.com").toJson(personWriter)
 ```
 
-**The implicitly Method**
+##### The implicitly Method
 
 Scala标准库提供了一个泛型的type class interface叫做implicitly，它的声明非常简单：
 
@@ -266,15 +266,15 @@ implicitly[JsonWriter[String]]
 
 在Cats中，大多数type class都提供了其他方式去调用对应的instance。但是在代码调试过程中，implicitly有着很大的用处。我们可以在代码中插入implicitly相关代码，来确保编译器能找到对应的type class instance（若无对应的type class instance则编译的时候会抱错）以及不会出现歧义性（比如implicit scope存在两个相同的type class instance）。
 
-**1.2 Working with Implicits**
+### 1.2 Working with Implicits
 
 对于Scala来说，使用type class就得跟 implicit values 和implicit parameters打交道，为了更好的使用它，我们需要了解以下几个点。
 
-**1.2.1 Packaging Implicits**
+#### 1.2.1 Packaging Implicits
 
 奇怪的是,在Scala中任何标记为implicit的定义都必须放在object或trait中，而不是放在顶层。在上一小节的例子中，我们将所有的type class instances打包放在JsonWriterInstances中。同样我们也可以把它放在JsonWriter的伴生对象中，这种方式在Scala中有特殊的含义，因为这些instances会直接在*implicit scope*里面，无需单独导入。
 
-**1.2.2 Implicit Scope**
+#### 1.2.2 Implicit Scope
 
 正如我们看到的一样，编译器会自动寻找对应类型的type class instances，举个例子，下面这个例子就会编译器就会自动寻找**JsonWriter[String]**对应的instance：
 
@@ -314,7 +314,7 @@ Json.toJson("A string")
 
 如果是第一种方式的，我们在使用之前通过import导入，第二种方式的话通过继承trait引入，另外两种方式的，无需单独导入，它们默认就在对应类型的implicit scope中。
 
-**1.2.3 Recursive Implicit Resolu􏰀on**
+#### 1.2.3 Recursive Implicit Resolu􏰀on
 
 编译器除了能直接寻找对应类型type class instance，还拥有组合type class instance的能力。
 
@@ -395,7 +395,7 @@ Json.toJson(Option("A string"))(optionWriter(stringWriter))
 >
 > 
 
-**1.3 Exercise: Printable Library**
+### 1.3 Exercise: Printable Library
 
 Scala可以通过toString方法将一个任意一个值转换成String。但是这种方式有一些缺陷：
 
@@ -408,7 +408,61 @@ Scala可以通过toString方法将一个任意一个值转换成String。但是�
 2. 创建一个名为PrintableInstances的object，包含Printable[String]和Printable[Int]的instance声明。
 3. 创建一个名为Printable的object，包含两个泛型方法：
    1. format方法：接受一个类型为A的参数和相关类型的Printable，使用Printable将参数转换为String。
-   2. print方法：与format方法参数一致，但返回值时Unit，它执行的操作时通过println将类型为A的参数输出到控制台。
+   2. print方法：与format方法参数一致，但返回值时Unit，它执行的操作是通过println将类型为A的参数输出到控制台。
 
+代码见[示例]()
 
+##### Using the Library
+
+我们可以把Printable这个功能封装成类库，然后在使用的地方引入，我们先来定义一个case class：
+
+```scala
+final case class Cat(name: String, age: Int, color: String)
+```
+
+接下来我们实现一个Printable[Cat]类型的instance，对应format的返回结果应为：
+
+```scala
+NAME is a AGE year-old COLOR cat.
+```
+
+ 最后我们对功能进行了实现（代码见[示例]()）
+
+##### Bett􏰁er Syntax
+
+我们将使用前面介绍的**Interface Syntax**的语法，让Printable相关的功能更容易使用：
+
+1. 创建一个PrintableSyntax的object。
+2. 在PrintableSyntax中声明一个implicit class PrintableOps[A]对A类型的值进行包装。
+3. 在PrintableOps[A]声明两个方法：
+   - format接受一个implicit Printable[A]的参数，返回String；
+   - print接受一个implicit Printable[A]的参数，返回Unit；
+4. 使用扩展方法对上一个例子进行不一样实现；
+
+（代码见[示例]()）
+
+### 1.4 Meet Cats
+
+在先前的章节我们学习了如何在Scala中去实现一个type class，在本节中我们学习Cats中实现的type class。
+
+Cats是的设计是模块化，你可以自由选择自己想要的type class、instance、interface methods。让我们来看第一个例子：[cats.Show](http://typelevel.org/cats/api/cats/Show.html)。
+
+Show的功能跟我们在上节实现的Printable基本一致。它的主要功能就是帮助我们将数据以更友好的方式输出的控制台，而不是通过toString方法，下面是它的一个简要声明：
+
+```scala
+package cats
+trait Show[A] {
+  def show(value: A): String
+}
+```
+
+#### Impor􏰀ng Type Classes
+
+Show这个type class声明在[cats](http://typelevel.org/cats/api/cats/)这个包里，我们可以直接进行import：
+
+```scala
+import cats.Show
+```
+
+在Cats中，每个type class的伴生对象中都有一个apply方法，用于
 
