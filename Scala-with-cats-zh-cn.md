@@ -464,5 +464,60 @@ Show这个type class声明在[cats](http://typelevel.org/cats/api/cats/)这个�
 import cats.Show
 ```
 
-在Cats中，每个type class的伴生对象中都有一个apply方法，用于
+在Cats中，每个type class的伴生对象中都有一个apply方法，用于查找我们指定类型对应的instance：
+
+```scala
+val showInt = Show.apply[Int]
+// <console>:13: error: could not find implicit value for parameter
+//  instance: cats.Show[Int]
+// val showInt = Show.apply[Int]
+```
+
+糟糕，竟然报错了，因为apply方法是通过implicit来查找对应的instance，所以我们需要导入相应的instance到implicit scope。
+
+#### Impor􏰀ng Default Instances
+
+ [cats.instances](https://typelevel.org/cats/api/cats/instances/)这个包提供了很多默认实现的instances，我们可以通过一下方式来引入它们，每种类型的包都包含了该类型对于Cats中所有type class的instance实现：
+
+- [cats.instances.int](https://typelevel.org/cats/api/cats/instances/package$$int$)提供所有Int的instances
+- [cats.instances.string](https://typelevel.org/cats/api/cats/instances/package$$string$)提供所有Stirng的instances
+- [cats.instances.list](https://typelevel.org/cats/api/cats/instances/package$$list$)提供所有List的instances
+- [cats.instances.option](https://typelevel.org/cats/api/cats/instances/package$$option$)提供所有Option的instances
+- [cats.instances.all](https://typelevel.org/cats/api/cats/instances/package$$all$)提供Cats中的所有instances
+
+有关可用导入的详细信息，请参见[cats.instances](https://typelevel.org/cats/api/cats/instances/)包。
+
+让我们来引入Int和String对应Show的instances：
+
+```scala
+import cats.instances.int._    // for Show
+import cats.instances.string._ // for Show
+
+val showInt: Show[Int] = Show.apply[Int] 
+val showString: Show[String] = Show.apply[String]
+```
+
+很好，我们引入了Int和String对应Show的instances，现在可以使用它们来打印Int和String的数据：
+
+```scala
+val intAsString: String = showInt.show(123)
+// intAsString: String = 123
+
+val stringAsString: String = showString.show("abc")
+// stringAsString: String = abc
+```
+
+#### Impori􏰀ng Interface Syntax
+
+我们可以使用*interface syntax*让Show变的更容易使用，首先我们需要先导入[cats.syntax.show](https://typelevel.org/cats/api/cats/syntax/package$$show$)，它会为任意类型添加一个show的扩展方法，前提是implicit scope已经有了对应类型的instance：
+
+```scala
+import cats.syntax.show._ // for show
+
+val shownInt = 123.show
+// shownInt: String = 123
+
+val shownString = "abc".show
+// shownString: String = abc
+```
 
