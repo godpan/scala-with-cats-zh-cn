@@ -521,3 +521,58 @@ val shownString = "abc".show
 // shownString: String = abc
 ```
 
+Cats为每一个type class都提供了syntax，我们可以按需使用，在后面的章节，我们会继续它们。
+
+#### **Impori􏰀ng All The Things!**
+
+在这本书中，我们对于每个示例都是按需导入，只导入需要的instance和syntax。然而，有些时候这也是相当费时的，你可以通过以下方式简化导入：
+
+- import cats._  导入Cats中所有的type class
+- import cats.instances.all._ 导入Cats中所有的instances
+- import cats.syntax.all._ 导入Cats中所有的syntax
+- import cats.implicits._  导入Cats中所有的instances和syntax
+
+大多数时候我们只需要全部导入即可：
+
+```scala
+import cats._
+import cats.implicits._
+```
+
+但当遇到命名冲突或者implicit冲突的时候，我们就需要更具体导入。
+
+#### Defining Custom Instances
+
+下面我们来自定义一个关于Show的instance：
+
+```scala
+import java.util.Date
+
+implicit val dateShow: Show[Date] =
+  new Show[Date] {
+    def show(date: Date): String =
+      s"${date.getTime}ms since the epoch."
+}
+```
+
+但是，Cats提供了一些更简洁的方法去声明instance。对于Show来说，在其伴生对象中有两个方法帮助我们创建自定义类型的instance：
+
+```scala
+object Show {
+  
+  // Convert a function to a `Show` instance:
+  def show[A](f: A => String): Show[A] = ???
+  
+  // Create a `Show` instance from a `toString` method:
+  def fromToString[A]: Show[A] = ???
+}
+```
+
+使用这些方法会比传统创建instance的方式更加快速：
+
+```scala
+implicit val dateShow: Show[Date] = Show.show(date => s"${date.getTime}ms since the epoch.")
+```
+
+我们可以看到，确实简洁了不少，Cats为很多type class都提供了类似的辅助方法来创建instance
+
