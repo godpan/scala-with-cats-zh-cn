@@ -574,5 +574,13 @@ object Show {
 implicit val dateShow: Show[Date] = Show.show(date => s"${date.getTime}ms since the epoch.")
 ```
 
-我们可以看到，确实简洁了不少，Cats为很多type class都提供了类似的辅助方法来创建instance
+我们可以看到，确实简洁了不少，Cats为很多type class都提供了类似的辅助方法来创建instance，可以从头直接创建instance，也可以基于其他类型的instance创建新的instance，比如：基于Int类型的instance创建Option[Int]类型的instance。
+
+#### 1.4.6 Exercise: Cat Show
+
+使用Show type class重写上面章节Printable的例子，代码见[示例]()
+
+### **Example: Eq**
+
+
 
