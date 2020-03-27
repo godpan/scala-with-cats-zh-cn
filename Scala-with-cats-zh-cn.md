@@ -580,7 +580,110 @@ implicit val dateShow: Show[Date] = Show.show(date => s"${date.getTime}ms since 
 
 使用Show type class重写上面章节Printable的例子，代码见[示例]()
 
-### **Example: Eq**
+### 1.5 Example: Eq
+
+本章节我们继续来学习一个非常实用的type class：[cats.Eq](https://typelevel.org/cats/api/cats/kernel/Eq.html)。Eq主要是为了类型安全的判等设计的，因为Scala内置的 ==操作符有时会给我们带来困扰。
+
+大多数Scala程序员都应该写过类似下面的代码：
+
+```scala
+List(1, 2, 3).map(Option(_)).filter(item => item == 1)
+// res0: List[Option[Int]] = List()
+```
+
+可能很多人都不会犯这么简单的错误，但是这是可能存在的，filter里面的判断逻辑会一直返回false，因为Int和Option[Int]是不可能相等的。
+
+这是开发者的错，我们应该用Some(1)去比较而不是1。然而这在技术上来说并不能说它是错的，因为==可以作用于任意的两个对象，不用关心具体的类型。Eq的设计，解决了这个问题，因为它是类型安全的。
+
+#### **1.5.1 Equality, Liberty, and Fraternity**
+
+我们可以使用Eq对任意给定类型的对象进行类型安全的判等：
+
+```scala
+package cats
+
+trait Eq[A] {
+  def eqv(a: A, b: A): Boolean
+  // other concrete methods based on eqv...
+}
+```
+
+与Show类似，关于Eq的interface syntax，声明在[cats.syntax.eq](https://typelevel.org/cats/api/cats/syntax/package$$eq$)这个包中，它提供了两个执行判等的方法，你可以直接使用，当然前提是在implicit scope中有对于的instance：
+
+- === 比较两个对象相等
+- =!= 比较两个对象不相等
+
+#### **1.5.2 Comparing Ints**
+
+让我们来看些例子，首先我们需要先导入对应的type class:
+
+```scala
+import cats.Eq
+```
+
+接着，我们来获取一个Int的instance：
+
+```scala
+import cats.instances.int._ // for Eq
+
+val eqInt = Eq[Int]
+```
+
+我们可以直接使用eqInt来进行判等：
+
+```scala
+eqInt.eqv(123, 123)
+// res2: Boolean = true
+
+eqInt.eqv(123, 234)
+// res3: Boolean = false
+```
+
+ 不同于Scala的==操作符，假如你试图用eqv去比较两个不同类型的对象时，编译将会报错：
+
+```scala
+eqInt.eqv(123, "234")
+// <console>:18: error: type mismatch; // found : String("234")
+// required: Int
+// eqInt.eqv(123, "234")
+// ^
+```
+
+我们同样可以使用interface syntax语法，需要先导入[cats.syntax.eq](https://typelevel.org/cats/api/cats/syntax/package$$eq$)，然后我们就可以直接使用 === 和 =!=方法：
+
+```scala
+import cats.syntax.eq._ // for === and =!=
+
+123 === 123
+// res5: Boolean = true
+
+123 =!= 234
+// res6: Boolean = true
+```
+
+同样，我们尝试去比较两个不同类型的对象时也会编译报错：
+
+```scala
+123 === "123"
+// <console>:20: error: type mismatch;
+//  found   : String("123")
+//  required: Int
+//        123 === "123"
+//         
+```
+
+#### **1.5.3 Comparing Op􏰀ons**
+
+接下来我们来看一个更有趣的例子—Option[Int]。如果要比较Option[Int]类型的值，我们需要先导入Option以及Int对应的instances：
+
+```scala
+import cats.instances.int._    // for Eq
+import cats.instances.option._ // for Eq
+```
+
+现在我们尝试
+
+
 
 
 
