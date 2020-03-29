@@ -681,7 +681,151 @@ import cats.instances.int._    // for Eq
 import cats.instances.option._ // for Eq
 ```
 
-现在我们尝试
+现在我们来尝试进行一些比较：
+
+```scala
+Some(1) === None
+// <console>:26: error: value === is not a member of Some[Int] // Some(1) === None
+// 
+```
+
+编译发现了一个错误，因为类型没匹配上，我们导入的是Int以及Option[Int]对应Eq的instances，所以Some[Int]是无法比较的。要解决这个问题我们需要将参数的类型指定为Option[Int]：
+
+```scala
+ (Some(1) : Option[Int]) === (None : Option[Int])
+// res9: Boolean = false
+```
+
+更友好的方式是利用标准库中的Option.apply和Option.empty方法：
+
+```scala
+ Option(1) === Option.empty[Int]
+// res10: Boolean = false
+```
+
+或者使用[cats.syntax.option](https://typelevel.org/cats/api/cats/syntax/package$$option$)中特殊的语法：
+
+```scala
+import cats.syntax.option._ // for some and none
+
+1.some === none[Int]
+// res11: Boolean = false
+1.some =!= none[Int]
+// res12: Boolean = true
+```
+
+#### **1.5.4 Comparing Custom Types**
+
+我们可以为自定义的类型创建一个关于Eq的instance，它接收一个(A, A) => Boolean 的方法返回一个Eq[A]：
+
+```scala
+import java.util.Date
+import cats.instances.long._ // for Eq
+
+implicit val dateEq: Eq[Date] =
+  Eq.instance[Date] { (date1, date2) =>
+    date1.getTime === date2.getTime
+  }
+val x = new Date() // now
+val y = new Date() // a bit later than now
+
+x === x
+// res13: Boolean = true
+x === y
+// res14: Boolean = false
+```
+
+#### **1.5.5 Exercise: Equality, Liberty, and Felinity**
+
+实现一个Cat类型关于Eq的instance：
+
+```scala
+final case class Cat(name: String, age: Int, color: String)
+```
+
+并对下面这些对象进行判等操作：
+
+```scala
+val cat1 = Cat("Garfield",   38, "orange and black")
+val cat2 = Cat("Heathcliff", 33, "orange and black")
+
+val optionCat1 = Option(cat1)
+val optionCat2 = Option.empty[Cat]
+```
+
+ 代码见[示例]()
+
+### 1.6 Controlling Instance Selec􏰀on
+
+ 在使用type class的时候，我们必须考虑以下两个问题，因为它们对于如何选择instance至关重要：
+
+- 假设B是A的子类型，那么声明为A类型的instance能作用于B吗？
+
+  举个例子，假如我们声明了一个JsonWriter[Option[Int]]的instance，那么Json.toJson(Some(1))能使用这个instance吗？（Some是Option的子类型）
+
+- xxxx
+
+#### **1.6.1 Variance**
+
+当我们在声明type class时，可以使用可变的类型参数，这样可以让type class也有“变型”的能力。
+
+在Essential scala中提到，variance跟子类型有关，假如可以在任意接收A类型值的地方用B类型值代替，那么可以说B是A的子类型。
+
+当我们在定义类型构造器的时候，可以使用annotations来标明它是否是支持协变或者逆变的。举个例子，我么可以使用**”+“**符号表示它是协变的：
+
+```scala
+trait F[+A] // the "+" means "covariant"
+```
+
+##### Convariance
+
+convariance代表着假如B是A的子类型，那么F[B]也是F[A]的子类型。这对很多类型的建模都很有用，比如List和Option：
+
+```scala
+trait List[+A]
+trait Option[+A]
+```
+
+在Scala中支持协变的集合允许我们使用子类型的集合代替父类型的集合。比如我们可以在任何接收List[Shape]的地方使用List[Circle]代替，因为Circle是Shape的子类型：
+
+```scala
+sealed trait Shape
+case class Circle(radius: Double) extends Shape
+
+val circles: List[Circle] = ???
+val shapes: List[Shape] = circles
+```
+
+那么什么是逆变呢？我们可以使用**”-“符号表示它是逆变的：
+
+```scala
+trait F[-A]
+```
+
+##### Contravariance
+
+不同的是，contravariance代表着假如B是A的子类型，那么F[A]也是F[B]的子类型。逆变在对”**processes（处理）**“建模的时候非常有用，比如我们定义一个JsonWriter：
+
+```scala
+trait JsonWriter[-A] {
+  def write(value: A): Json
+}
+// defined trait JsonWriter
+```
+
+进一步看其中的原理，我们要知道variance其实就是用一个值替换另一个值的能力。考虑一个场景，我们有两个类型值，Shape和Circle类型，以及两个JsonWriters，同样分别是Shape和Circle类型的：
+
+```scala
+val shape: Shape = ???
+val circle: Circle = ???
+
+val shapeWriter: JsonWriter[Shape] = ???
+val circleWriter: JsonWriter[Circle] = ???
+
+def format[A](value: A, writer: JsonWriter[A]): Json = writer.write(value)
+```
+
+
 
 
 
