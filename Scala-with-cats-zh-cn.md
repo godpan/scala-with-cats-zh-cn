@@ -825,7 +825,19 @@ val circleWriter: JsonWriter[Circle] = ???
 def format[A](value: A, writer: JsonWriter[A]): Json = writer.write(value)
 ```
 
+现在你可以问自己一个问题：”format方法支持哪些参数组合呢？“。假如value为circle，那么writer可以为任一一个，因为所有Circle都是Shape。但反过来，shape不能与circleWriter组合，因为不是所有的Shape都是Circle。
 
+这种情况下，我们就会使用逆变参数来进行建模。JsonWriter[Shape]是JsonWriter[Circle]子类型，因为Circle是Shape的子类型，这意味着任何接收JsonWriter[Circle]类型值的地方，都可以用shapeWriter代替。
+
+##### **Invariance**
+
+不变相对来说更容易理解，在类型构造的时候不需要指定”**+**“或者”**-**“的符号：
+
+```scala
+trait F[A]
+```
+
+这意味着不管A和B是什么关系，F[A]和F[B]都不再是对方的子类型，这也是Scala的默认方式。
 
 
 
