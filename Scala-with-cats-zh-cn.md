@@ -876,3 +876,59 @@ final case object C extends A
 
 在接下去的章节中，我们将会学习一些应用广泛且强大的type class，比如Semigroup, Monoid, Functor, Monad, Semigroupal, Applicative, Traverse等，在每一个示例下，我们都会介绍这个type class所拥有的能力，遵循的法则，以及在Cats中是如何实现的。这些Type class相对Show以及Eq来说，要更抽象许多，虽然这会让我们更难学习，但在实际上它们却更有用。
 
+
+
+### Chapter 2
+
+###  **Monoids and Semigroups**
+
+在本章中，我们将探索两个type class：**monoid**和**semigroup**。他们的主要功能是对值进行相加或者组合，并且很多类型都有对应这个两个type class的instance，比如Int，String，List，Option等，接下来让我们先了解一些简单的类型和操作，尝试理解其背后原理。
+
+##### **Integer additi􏰀on**
+
+Int的加法是满足**封闭性**的，也就是说两个Int相加会生一个新的Int：
+
+```scala
+ 2+1
+// res0: Int = 3
+```
+
+同时还存在一个“**单位元0**”满足a + 0 == 0 + a == a：
+
+```scala
+2+0
+// res1: Int = 2
+0+2
+// res2: Int = 2
+```
+
+另外它也满足**结合律**：
+
+```scala
+(1 + 2) + 3
+// res3: Int = 6
+1 + (2 + 3)
+// res4: Int = 6
+```
+
+**Integer mul􏰀plica􏰀on**
+
+Int的乘法同样满足上面我们描述加法的三个特性，只不过它的单位元由0变为了1：
+
+```scala
+1*3
+// res5: Int = 3
+3*1
+// res6: Int = 3
+```
+
+也满足**结合律**：
+
+```scala
+(1 * 2) * 3
+// res7: Int = 6
+
+1 * (2 * 3)
+// res8: Int = 6
+```
+
