@@ -951,3 +951,17 @@ String类型同样也可以相加，可以使用字符串拼接作为一个操�
 // res11: String = Hello
 ```
 
+同样，拼接也满足结合律：
+
+```scala
+("One" ++ "Two") ++ "Three"
+// res12: String = OneTwoThree
+
+"One" ++ ("Two" ++ "Three")
+// res13: String = OneTwoThree
+```
+
+注意，这里我们是使用++来进行序列拼接，而不是+，除了字符串（可以看出Char类型的sequence）以外，我们还可以去其他类型的sequence执行相同的操作，拼接作为操作符，空sequence为单位元。
+
+#### 2.1 Defini􏰁on of a Monoid
+
