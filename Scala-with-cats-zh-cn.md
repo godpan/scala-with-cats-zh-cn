@@ -38,7 +38,7 @@ scalacOptions ++= Seq(
 )
 ```
 
-### **模版工程**
+### 模版工程
 
 为了方便，我们创建了一个Giter8 template工程，你可以直接使用，通过以下方式clone到本地：
 ```shell
@@ -102,11 +102,11 @@ object MyApp extends App {
 
 
 
-## <center>**Part I**</center>
+## <center>Part I</center>
 
 
 
-## <center>**Theory**</center>
+## <center>Theory</center>
 
 
 
@@ -115,9 +115,9 @@ object MyApp extends App {
 
 
 
-### **Chapter 1**
+### Chapter 1
 
-## **介绍**
+## 介绍
 
 Cats包含各种各样的函数式编程工具，并允许开发者自己选择想要使用的内容。 这些工具多数以type class的形式提供，我们可以将其应用于现有的Scala类型。
 
@@ -185,7 +185,7 @@ object JsonWriterInstances {
 }
 ```
 
-###$ 1.1.3 Type Class Interfaces
+#### 1.1.3 Type Class Interfaces
 
 Type Class  Interface包含对我们想要对外部暴露的功能。interfaces是指接受 type class instance 作为 `implicit` 参数的泛型方法。
 
@@ -911,7 +911,7 @@ Int的加法是满足**封闭性**的，也就是说两个Int相加会生一个�
 // res4: Int = 6
 ```
 
-**Integer mul􏰀plica􏰀on**
+**Integer mul􏰀plica􏰀tion**
 
 Int的乘法同样满足上面我们描述加法的三个特性，只不过它的单位元由0变为了1：
 
@@ -930,5 +930,24 @@ Int的乘法同样满足上面我们描述加法的三个特性，只不过它�
 
 1 * (2 * 3)
 // res8: Int = 6
+```
+
+##### String and sequence concatena􏰁tion
+
+String类型同样也可以相加，可以使用字符串拼接作为一个操作符：
+
+```scala
+ "One" ++ "two"
+// res9: String = Onetwo
+```
+
+单位元为一个空字符串:
+
+```scala
+"" ++ "Hello"
+// res10: String = Hello
+
+"Hello" ++ ""
+// res11: String = Hello
 ```
 
