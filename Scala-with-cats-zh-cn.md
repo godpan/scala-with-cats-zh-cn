@@ -979,7 +979,7 @@ trait Monoid[A] {
 }
 ```
 
-monoid除了拥有这两个最基本的定义外，还需要满足一些法则，就是我们前面提到的“**结合律**”和“**幺元**”，对于A类型中的值，比如x，y，z必须满足以下两个函数：
+monoid除了拥有这两个最基本的定义外，还需要满足一些法则，就是我们前面提到的“**结合律**”和“**幺元**”，对于A类型中的值x，y，z，必须满足以下两个函数：
 
 ```scala
 def associativeLaw[A](x: A, y: A, z: A)
@@ -994,4 +994,207 @@ def identityLaw[A](x: A)
     (m.combine(m.empty, x) == x)
 }
 ```
+
+很显然，整数减法不是一个Monoid，因为它不满足**结合律**：
+
+```scala
+(1 - 2) - 3
+// res15: Int = -4
+
+1 - (2 - 3)
+// res16: Int = 2
+```
+
+在自己去实现一个Monoid instance的时候，一定要遵循对应的法则，非法的instance非常危险，因为可能出现不可预测的结果。大多数时候我们只需要使用Cats中已经声明instance，当然你最好去看一下它们的源码，了解一下它们背后的实现。
+
+#### ****2.2 Defini􏰁on of a Semigroup
+
+如何仅仅满足结合律，但是不存在幺元的结构我们称之为Semigroup。虽然很多时候Semigroup也可能是一个Monoid，但还是有一些类型我们无法定义它的empty值，也就说这种情况下Semigroup无法变成一个Monoid。举个例子，前面我们所看到的序列拼接以及整数加法都是Monoid，但比如现在我们的取值范围限制在不可用序列以及正整数上，我们将无法为它们声明一个empty值。Cats中就有一个非空列表[NonEmptyList](https://typelevel.org/cats/api/cats/data/NonEmptyList.html)，所以它仅仅实现了Semigroup接口而不是Monoid接口。
+
+所以，在Cats中Monoid更加准确的定义是这样的：
+
+```scala
+trait Semigroup[A] {
+  def combine(x: A, y: A): A
+}
+
+trait Monoid[A] extends Semigroup[A] {
+  def empty: A
+}
+```
+
+接下来我们将看到很多type class继承的例子，它让代码组织更加模块化以及拥有更好的复用性。假如现在我们为A类型声明了一个Monoid instance，我们能同时也能得到一个Semigroup instance，类似的，一个方法如果需要Semigroup[B]类型的参数，我们都可以用Monoid[B]的值代替。
+
+#### 2.3 Exercise: The Truth About Monoids
+
+之前我们只是看了Monoid的一些例子，比如整数加法，整数乘法等，其实还有很多Monoid等待我们发现，考虑一下Boolean类型，对于这个类型你能声明多少种Monoid？每个Monoid都有一个combine方法以及一个empty值，并且需要确保满足之前讲的两个法则，即结合律和存在幺元。我们先来声明基础的结构：
+
+```scala
+trait Semigroup[A] {
+  def combine(x: A, y: A): A
+}
+
+trait Monoid[A] extends Semigroup[A] {
+  def empty: A
+}
+
+object Monoid {
+  def apply[A](implicit monoid: Monoid[A]) = monoid 
+}
+```
+
+代码详情见[示例]()
+
+#### **2.4 Exercise: All Set for Monoids**
+
+对于Set类型来说，它可以有哪些Monoid和Semigroup结构？
+
+代码详情见[示例]()
+
+#### 2.5 Monoids in Cats
+
+现在我们已经知道Monoid是什么了，接下去就来看一下Cats中有哪些Monoid实现吧。我们将再次从type class的三个主要部分看起：type class、instance、interface。
+
+##### 2.5.1 The Monoid Type Class
+
+Cats中的type class都定义在cats.kernel.Monoid这个包中，别名[cats.Monoid](https://typelevel.org/cats/api/cats/kernel/Monoid.html)。Monoid继承了cats.kernel.Semigroup（别名[cats.Semigroup](https://typelevel.org/cats/api/cats/kernel/Semigroup.html))，通常我们使用以下方式来进行导入使用：
+
+```scala
+import cats.Monoid
+import cats.Semigroup
+```
+
+>*Cats Kernel?*
+>
+>Cats Kernel 是Cats的一个子项目，它仅仅包含了Cats中一些核心的type class，它们被定义在[cats.kernel](http://typelevel.org/cats/api/cats/kernel/)这个包，别名[cats](https://typelevel.org/cats/api/cats/)，但我们通常不需要关心这些。
+>
+>Cats Kernel包含了我们之前讲过的一些type class，比如[Eq](https://typelevel.org/cats/api/cats/kernel/Eq.html)，[Semigroup](https://typelevel.org/cats/api/cats/kernel/Semigroup.html)，[Monoid](https://typelevel.org/cats/api/cats/kernel/Monoid.html)等，其他属于Cats主项目的type class都声明在[cats](https://typelevel.org/cats/api/cats/)这个包中。
+
+##### 2.5.2 Monoid Instances
+
+Monoid同样遵循Cats的标准结构，在其伴生对象中有一个apply方法，用于返回特定类型的type class instance。举个例子，如果我们需要一个String类型的Monoid instance，并且已经对应的implicit scope中，我们可以这样做：
+
+```scala
+import cats.Monoid
+import cats.instances.string._ // for Monoid
+
+Monoid[String].combine("Hi ", "there")
+// res0: String = Hi there
+Monoid[String].empty
+// res1: String = ""
+```
+
+等价于：
+
+```scala
+Monoid.apply[String].combine("Hi ", "there") 
+// res2: String = Hi there
+
+Monoid.apply[String].empty
+// res3: String = ""
+```
+
+我们知道，Monoid是继承Semigroup，如果我们不需要empty值，我们也可以这么写：
+
+```scala
+import cats.Semigroup
+
+Semigroup[String].combine("Hi ", "there")
+// res4: String = Hi there
+```
+
+Monoid相关的instance也是按照第一章中所讲的原则一样，依据类型定义在cats.instances这个包中。比如我们想要使用Int类型的Monoid instance，则需要导入[cats.instances.int](https://typelevel.org/cats/api/cats/instances/package$$int$)：
+
+```scala
+import cats.Monoid
+import cats.instances.int._ // for Monoid
+
+Monoid[Int].combine(32, 10)
+// res5: Int = 42
+```
+
+同样，如果我们需要Monoid[Option[Int]]的instance，则需要同时导入[cats.instances.int](https://typelevel.org/cats/api/cats/instances/package$$int$)和[cats.instances.option](https://typelevel.org/cats/api/cats/instances/package$$option$)：
+
+```scala
+import cats.Monoid
+import cats.instances.int._    // for Monoid
+import cats.instances.option._ // for Monoid
+
+val a = Option(22)
+// a: Option[Int] = Some(22)
+val b = Option(20)
+// b: Option[Int] = Some(20)
+
+Monoid[Option[Int]].combine(a, b)
+// res6: Option[Int] = Some(42)
+```
+
+更多关于导入的详情请参考第一章的相关内容。
+
+##### 2.5.3 Monoid Syntax
+
+Cats通过interface syntax为combine提供了“|+|”操作符，因为combine方法是定一个Semigroup中的，所以要使用这个syntax需要导入[cats.syntax.semigroup](http://typelevel.org/cats/api/cats/syntax/package$$semigroup$)：
+
+```scala
+import cats.instances.string._ // for Monoid
+import cats.syntax.semigroup._ // for |+|
+
+val stringResult = "Hi " |+| "there" |+| Monoid[String].empty
+// stringResult: String = Hi there
+
+import cats.instances.int._ // for Monoid
+
+val intResult = 1 |+| 2 |+| Monoid[Int].empty
+// intResult: Int = 3
+```
+
+##### 2.5.4 Exercise: Adding All The Things
+
+*SuperAdder v3.5a-32*加法器是对两数相加的首选工具，它主要功能由def add(items: List[Int]): Int这个方法提供，假如该方法的代码不幸被删除，现在要你去实现，你会怎么做？
+
+代码见[示例]()
+
+很好，我们已经实现了基本的加法功能，但随着SuperAdder的发展，现在有了额外的需求，需要对List[Option[Int]]进行相加，现在就去实现吧，但要注意的是代码的质量要高，不要出现重复代码。
+
+代码见[示例]()
+
+现在SuperAdder已经打进销售领域了，所以它现在必须拥有对订单相加的功能：
+
+```scala
+case class Order(totalCost: Double, quantity: Double)
+```
+
+如何不修改add方法的前提下做到这一点，开动脑筋吧！
+
+代码见[示例]()
+
+#### 2.6 Applica􏰁ons of Monoids
+
+现在我们已经知道了什么是Monoid，可以看做添加或者组合的抽象概念，但它在什么时候才最有用呢？以下这些想法Monoid将扮演重要的角色，相关的细节将会在本书的后续章节进行详细的探讨。
+
+##### 2.6.1 Big Data
+
+在很多大数据系统的应用，比如Spark或者Hadoop，都使用了分布式计算，从而提供了更好容错行以及可伸缩性，这也意味着每个节点返回的数据只是结果的一部分，我们需要对这些数据进行组合得到最终的结果，在大多数情况下，这种方式就可以看出一种Monoid。
+
+假如你想计算一个web站点的总访问量，这意味着每个节点返回的数据类型为Int，我们知道对于Int来说，它的加法是符合Monoid法则的，所以我们可以正确的应用Monoid。
+
+假如你想计算一个web站点有多少唯一身份的访问者，这相当于每个节点返回的数据类型为Set[User]，我们知道Set的union操作是符合Monoid法则的，所以我们可以正确的应用Monoid。
+
+If we want to calculate 99% and 95% response 􏰁mes from our server logs, we can use a data structure called a QTree for which there is a monoid.
+
+通常这些例子，希望你能了解Monoid为什么有用。其实大多数数据分析都可以看成一个Monoid，因此我们可以基于这个想法去构建一个表达力强大的系统，这也正是Twi􏰃tter下面的Algebird和Summingbird项目正在做的事，我们在将map-reduce案例中继续探索学习这个想法。
+
+##### 2.6.2 Distributed Systems
+
+在分布式系统中，不同的节点会有不同的视图数据，比如一条更新命令有些节点收到了有些节点没收到，这便会造成数据不一致，但是我们希望能协调这些不一致能数据，即使在有命令丢失的情况下也能保证数据的一致性，这称为“**最终一致性**”。
+
+一种特殊的数据结构支持这种协调，被称为commuta􏰁ve replicated data types（CRDTs）
+
+
+
+
+
+ 
+
+
 
