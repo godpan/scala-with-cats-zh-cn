@@ -1188,13 +1188,89 @@ If we want to calculate 99% and 95% response 􏰁mes from our server logs, we ca
 
 在分布式系统中，不同的节点会有不同的视图数据，比如一条更新命令有些节点收到了有些节点没收到，这便会造成数据不一致，但是我们希望能协调这些不一致能数据，即使在有命令丢失的情况下也能保证数据的一致性，这称为“**最终一致性**”。
 
-一种特殊的数据结构支持这种协调，被称为commuta􏰁ve replicated data types（CRDTs）
+一种特殊的数据结构支持这种协调，被称为commuta􏰁ve replicated data types（CRDTs），它的主要操作是合并两个实例，with a result that captures all the in- forma􏰁on in both instances.这个操作也依赖一个monoid instance，我们将在CRDT章节进行更深入的探索。
+
+##### 2.6.3 Monoids in the Small
+
+上面讲的两个例子都属于系统架构的范畴，其实在很多场景里使用monoid可以让代码变的更加精简和优雅，在这本书中我们将看到很多类似的案例。
+
+#### 2.7 Summary
+
+在本章中，我们达到了一个重要的里程碑，we covered our first type classes with fancy func􏰁onal programming names:
+
+- Semigroup代表中一个加法或者组合的操作；
+- Monoid继承了Semigroup，并拥有“**幺元**”；
+
+要使用Semigroup和Monoid，我们需要导入以下3部分：
+
+1. type class 本身；
+2. type class instance；
+3. 导入semigroup syntax 获得|+|操作符；
+
+```scala
+import cats.Monoid
+import cats.instances.string._ // for Monoid
+import cats.syntax.semigroup._ // for |+|
+
+"Scala" |+| " with " |+| "Cats"
+// res0: String = Scala with Cats
+```
+
+导入对应类型的instance到implict scope里，我们就可以对这些类型进行添加或者组合操作：
+
+```scala
+import cats.instances.int._    // for Monoid
+import cats.instances.option._ // for Monoid
+
+Option(1) |+| Option(2)
+// res1: Option[Int] = Some(3)
+
+import cats.instances.map._ // for Monoid
+
+val map1 = Map("a" -> 1, "b" -> 2)
+val map2 = Map("b" -> 3, "d" -> 4)
+map1 |+| map2
+// res3: Map[String,Int] = Map(b -> 5, d -> 4, a -> 1)
+
+import cats.instances.tuple._ // for Monoid
+
+val tuple1 = ("hello", 123)
+val tuple2 = ("world", 321)
+
+tuple1 |+| tuple2
+// res6: (String, Int) = (helloworld,444)
+```
+
+同样我们也可以写一个泛型方法，只要有对应类型的Monoid instance，就可以进行添加操作：
+
+```scala
+def addAll[A](values: List[A])
+      (implicit monoid: Monoid[A]): A =
+  values.foldRight(monoid.empty)(_ |+| _)
+
+addAll(List(1, 2, 3))
+// res7: Int = 6
+
+addAll(List(None, Some(1), Some(2)))
+// res8: Option[Int] = Some(3)
+```
+
+Monoid是学习Cats最好的引路石，因为它容易理解并且使用简单。然而，就Cats中的所有抽象来说，它只是冰山一角，在下一章中我们将学习另一个type class “*functors*”，它代表着拥有一个map方法，这将是有趣的开始！
+
+#### **Chapter 3**
+
+### **Functors**
 
 
 
 
 
- 
+
+
+
+
+
+
 
 
 
