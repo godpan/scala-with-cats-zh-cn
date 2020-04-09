@@ -1257,9 +1257,19 @@ addAll(List(None, Some(1), Some(2)))
 
 Monoid是学习Cats最好的引路石，因为它容易理解并且使用简单。然而，就Cats中的所有抽象来说，它只是冰山一角，在下一章中我们将学习另一个type class “*functors*”，它代表着拥有一个map方法，这将是有趣的开始！
 
+
+
+
+
 #### **Chapter 3**
 
 ### **Functors**
+
+本章我们将来探索**functors**，它是一种抽象，代表着对一些context有着连续操作的能力，比如List，Option等，Functor本身并不是很用，但是它的一些特例比如**monad**和**applica􏰀ve functor**却在Cats中被广泛使用。
+
+#### 3.1 Examples of Functors
+
+简单来说，functor就是拥有一个map方法，你熟悉的很多类型都有这个方法，比如：Option，List，Either等。
 
 
 
