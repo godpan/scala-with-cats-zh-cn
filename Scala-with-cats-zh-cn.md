@@ -1278,11 +1278,100 @@ List(1, 2, 3).map(n => n + 1)
 // res0: List[Int] = List(2, 3, 4)
 ```
 
-类似的，map也可以作用于Option类型，会对其中的值进行转换，但Some结构以及None值是不会发生改变的，同样的原理对于Either类型也是一样可以使用map进行值转换，
+类似的，map也可以作用于Option类型，会对其中的值进行转换，但Some结构以及None值是不会发生改变的，同样的原理对于Either类型也是一样可以使用map进行值转换，图3.1也体现了这种转换的基本流程：
+
+![scala-with-cats-3.1](/Users/panguansen/github/scala-with-cats-zh-cn/scala-with-cats-3.1.png)
 
 
 
+因为map操作不会改变上下文的结构，所以我们可以对初始接口进行连续运算：
 
+```scala
+List(1, 2, 3).
+  map(n => n + 1).
+  map(n => n * 2).
+  map(n => n + "!")
+// res1: List[String] = List(4!, 6!, 8!)
+```
+
+我们不应该将map看作是一种迭代模式，List只是一个例子而已，而应该将其看作一种值的运算但无需关心外部复杂的数据类型，比如：
+
+- Option：可能存在值或者不存在
+- Either：可能返回值或者error
+- List：可能存在0个或者多个值
+
+#### 3.2 More Examples of Functors
+
+map方法对于List，Option以及Either来说应用很直接，但连续运算这种思维不仅仅于此，让我们来看一些其他functor结构是如何应用这一模式的。
+
+##### Futures
+
+Future是一个functor，它是基于异步队列的模式，前一个Future完成后产生的结果可以使用map方法。如图3.2所示：
+
+![scala-with-cats-3.2](/Users/panguansen/github/scala-with-cats-zh-cn/scala-with-cats-3.2.png)
+
+
+
+虽跟图3.1所示的内容很相似，但是背后却有不同的表现形式。
+
+使用Future的时候，我们无法保证其内部的状态，它可能正在进行中，已完成或者已拒绝。假如Future已经完成，则会直接调用我们在map中指定的方法，如果未完成，则会由其他线程在Future执行完之后再调用。我们无法获知我们指定的方法什么时候会被调用，但是我们可以知道它们的调用顺序，所以可以与List, Option, 和Either类似的方式使用map：
+
+```scala
+import scala.concurrent.{Future, Await}
+import scala.concurrent.ExecutionContext.Implicits.global 
+import scala.concurrent.duration._
+
+val future: Future[String] =
+  Future(123).
+    map(n => n + 1).
+    map(n => n * 2).
+    map(n => n + "!")
+Await.result(future, 1.second)
+// res3: String = 248!
+```
+
+>*Futures and Referen􏰀al Transparency*
+>
+> 需要注意的是Scala的Future并不是很好的代表函数式编程例子，因为它不是引用透明的，Future每次都会执行并且缓存结果，而且我们无法改变这种行为，这会导致如果Future中的计算有副作用的话，Future的结果将会无法预知，比如：
+>
+>```scala
+>import scala.util.Random
+>import scala.concurrent.{Future, Await}
+>import scala.concurrent.ExecutionContext.Implicits.global 
+>import scala.concurrent.duration._
+>
+>val future1 = {
+>  // Initialize Random with a fixed seed:
+>  val r = new Random(0L)
+>  // nextInt has the side-effect of moving to
+>  // the next random number in the sequence:
+>  val x = Future(r.nextInt)
+>  for {
+>    a <- x
+>    b <- x
+>  } yield (a, b)
+>}
+>val future2 = {
+>  val r = new Random(0L)
+>  for {
+>    a <- Future(r.nextInt)
+>    b <- Future(r.nextInt)
+>  } yield (a, b)
+>}
+>
+>val result1 = Await.result(future1, 1.second)
+>// result1: (Int, Int) = (-1155484576,-1155484576)
+>val result2 = Await.result(future2, 1.second)
+>// result2: (Int, Int) = (-1155484576,-723955400)
+>```
+>
+>理想情况下，我们希望result1和result2的值是相同的。然而，future1中只会执行一遍r.nextInt而future2会执行两遍，因为r.nextInt每次都会得到不同的结果，所以result1与result2也是不同的。
+>
+>如果代码中存在Future和副作用的代码，那么程序将会变得很难推理，而且Future还存在其他问题，比如Future一创建便开始运行，所以我们无法控制它什么时候开始执行，关于Future的更多信息可参考这个讨论：[this excellent Reddit answer](https://www.reddit.com/r/scala/comments/3zofjl/why_is_future_totally_unusable/)。
+
+由于Future不是引用透明的，我们或许应该来看下另一种数据类型，你可能已经见过了...
+
+##### Func􏰁ons (?!)
 
 
 
