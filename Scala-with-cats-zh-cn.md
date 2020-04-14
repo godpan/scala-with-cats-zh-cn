@@ -1373,10 +1373,42 @@ Await.result(future, 1.second)
 
 ##### Func􏰁ons (?!)
 
+一个参数的functi􏰁on也是一个functor，To see this we have to tweak the types a li􏰃le，一个A =>B的function包含两个类型参数，一个参数类型A，一个返回类型B，我们来看一下步骤：
 
+- 初始： X => A
+- 应用一个函数：A => B
+- 返回：X => B
 
+我们可以将X => A看作MyFunc[A]，所以它也可以跟我们上面介绍其他类型一样有相同的模式：
 
+![scala-with-cats-3.3](/Users/panguansen/github/scala-with-cats-zh-cn/scala-with-cats-3.3.png)
 
+- 初始：MyFunc[A]
+- 应用一个函数：A => B
+- 返回：MyFunc[B]
 
+换句话说，“mapping”对于单参数函数来说，可以看成一种函数组合：
+
+```scala
+import cats.instances.function._ // for Functor
+import cats.syntax.functor._     // for map
+
+val func1: Int => Double =
+  (x: Int) => x.toDouble
+
+val func2: Double => Double =
+  (y: Double) => y * 2
+
+(func1 map func2)(1)     // composition using map
+// res7: Double = 2.0
+
+(func1 andThen func2)(1) // composition using andThen
+// res8: Double = 2.0
+
+func2(func1(1))          // composition written out by hand
+// res9: Double = 2.0
+```
+
+这与连续运算这种模式又有什么关系呢？
 
 
