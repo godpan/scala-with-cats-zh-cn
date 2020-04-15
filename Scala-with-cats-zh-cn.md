@@ -1409,6 +1409,6 @@ func2(func1(1))          // composition written out by hand
 // res9: Double = 2.0
 ```
 
-这与连续运算这种模式又有什么关系呢？
+这与连续运算这种模式又有什么关系呢？其实我们可以试想一下，函数组合就是连续的
 
 
