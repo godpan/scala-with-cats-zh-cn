@@ -1280,7 +1280,7 @@ List(1, 2, 3).map(n => n + 1)
 
 类似的，map也可以作用于Option类型，会对其中的值进行转换，但Some结构以及None值是不会发生改变的，同样的原理对于Either类型也是一样可以使用map进行值转换，图3.1也体现了这种转换的基本流程：
 
-![scala-with-cats-3.1](/Users/panguansen/github/scala-with-cats-zh-cn/scala-with-cats-3.1.png)
+![scala-with-cats-3.1](./scala-with-cats-3.1.png)
 
 
 
@@ -1308,7 +1308,7 @@ map方法对于List，Option以及Either来说应用很直接，但连续运算�
 
 Future是一个functor，它是基于异步队列的模式，前一个Future完成后产生的结果可以使用map方法。如图3.2所示：
 
-![scala-with-cats-3.2](/Users/panguansen/github/scala-with-cats-zh-cn/scala-with-cats-3.2.png)
+![scala-with-cats-3.2](./scala-with-cats-3.2.png)
 
 
 
@@ -1381,7 +1381,7 @@ Await.result(future, 1.second)
 
 我们可以将X => A看作MyFunc[A]，所以它也可以跟我们上面介绍其他类型一样有相同的模式：
 
-![scala-with-cats-3.3](/Users/panguansen/github/scala-with-cats-zh-cn/scala-with-cats-3.3.png)
+![scala-with-cats-3.3](./scala-with-cats-3.3.png)
 
 - 初始：MyFunc[A]
 - 应用一个函数：A => B
@@ -1424,6 +1424,285 @@ func(123)
 
 > Partial Unification
 >
-> 
+> 为了使我们的例子能够正常运行，我们需要在build.sbt中添加编译参数：
+>
+> ```scala
+> scalacOptions += "-Ypartial-unification"
+> ```
+>
+> 若不添加该参数，编译的时候将会报错：
+>
+> ```scala
+> func1.map(func2)
+> // <console>: error: value map is not a member of Int => Double 
+> // func1.map(func2)
+> ```
+>
+> 有关改内容的详细信息将会在3.8章节探讨。
+
+##### 3.3 Defini􏰁on of a Functor
+
+上面我们看到的例子都是functor，表现是都支持连续运算。准确的说，对于一个类型F[A]，如果它存在一个map操作，传入A=>B的函数，并返回F[B]，那么我们可以称F[A]是一个functor，用图表示：
+
+![scala-with-cats-3.4](./scala-with-cats-3.4.png)
+
+Cats同样提供了Functor这个type class：[cats.functor]()，但它之前介绍的type class有些不同，它接收一个F[A]作为类型参数，我们来看一下它的一个简化声明：
+
+```scala
+package cats
+import scala.language.higherKinds
+
+trait Functor[F[_]] {
+  def map[A, B](fa: F[A])(f: A => B): F[B]
+}
+```
+
+如果你之前没见F[_]这种语法，现在是时候简短的讨论下类型构造器以及高阶类型了，同样我们也会被scala.language的导入进行说明。
+
+>*Functor Laws*
+>
+>Functors需要保证在以下两种情况下的语义是相同的：
+>
+>- 每个小函数一步一步计算
+>- 先将小函数进行组合成大函数
+>
+>所以它必须满足以下法则：
+>
+>**Iden􏰀tity**：使用map调用identi􏰁ty函数还是返回自身，相当于什么都没做：
+>
+>```scala
+> fa.map(a => a) == fa
+>```
+>
+>**Composi􏰀tion**：比如存在两个函数f、g，先组合f和g然后再执行与执行完f后再执行g结果是相同的：
+>
+>```
+> fa.map(g(f(_))) == fa.map(f).map(g)
+>```
+
+#### 3.4 Aside: Higher Kinds and Type Constructors
+
+Kinds可以看做类型的类型，They describe the number of “holes” in a type。我们区分一种类型是常规类型还是类型构造器，只要看它是否有“holes”。
+
+举个例子，List就是一个类型构造器，我们只需要填充对应的类型便会产生一个新的常规类型，比如 List[Int] 或者List[A]，这是区分常规类型还是类型构造器的诀窍，List是一个类型构造器，而List [A]是一个类型：
+
+```scala
+List    // type constructor, takes one parameter
+List[A] // type, produced using a type parameter
+```
+
+其实函数与值和这个概念也非常接近，函数可以看成一个“值构造器”，我们传入指定参数便会产生一个新的值：
+
+```scala
+math.abs    // function, takes one parameter
+math.abs(x) // value, produced using a value parameter
+```
+
+在scala中，通过下划线来声明类型构造器，一旦声明之后，我们在引用它的地方却不需要下划线的标识了：
+
+```scala
+// Declare F using underscores:
+def myMethod[F[_]] = {
+  // Reference F without underscores:
+  val functor = Functor.apply[F]
+  // ...
+}
+```
+
+这跟函数声明很类似，比如我们在定义函数的时候需要声明它的参数，但在引用这个函数的时候却不需要：
+
+```scala
+// Declare f specifying parameters:
+val f = (x: Int) => x * 2
+
+// Reference f without parameters:
+val f2 = f andThen f
+```
+
+在了解了有关类型构造器的知识后，我们可以发现Cats中的声明的Functor允许我们创建任意单参数类型构造器的instance，比如List，Option，Future，或者自定义的类型比如MyFunc等。
+
+> *Language Feature Imports*
+>
+> 在Scala中，高阶类型属于高级语言功能，当我们声明一个类型构造器并使用F[_]这种语法的时候，需要开启高阶类型编译的支持以消除编译时候的警告，我们可以通过导入：
+>
+> ```scala
+> import scala.language.higherKinds
+> ```
+>
+> 或者也可以在build.sbt添加编译参数：
+>
+> ```scala
+> scalacOptions += "-language:higherKinds"
+> ```
+>
+> 在本书中我们为了更加明确的表示含义，使用了import的方式，然后，在实际应用中更倾向于使用scalacOption，因为它更简单也更方便。
+
+#### 3.5 Functors in Cats
+
+接下去我们来看下Cats中对于Functor的实现，与monoid类似，我们需要关注它的主要三个部分：type class，type class instance，interface syntax。
+
+##### 3.5.1 The Functor Type Class
+
+functor声明在[cats.Functor](http://typelevel.org/cats/api/cats/Functor.html)中，同样我们可以通过在它伴生对象中apply来获取对于类型的instance，通常默认的一些instance放置在[cats.instances](https://typelevel.org/cats/api/cats/instances/) 这个包中：
+
+```scala
+import scala.language.higherKinds
+import cats.Functor
+import cats.instances.list._   // for Functor
+import cats.instances.option._ // for Functor
+
+val list1 = List(1, 2, 3)
+// list1: List[Int] = List(1, 2, 3)
+
+val list2 = Functor[List].map(list1)(_ * 2)
+// list2: List[Int] = List(2, 4, 6)
+
+val option1 = Option(123)
+// option1: Option[Int] = Some(123)
+
+val option2 = Functor[Option].map(option1)(_.toString) // option2: Option[String] = Some(123)
+```
+
+Functor也提供了一个lift方法，它可以将一个类型A => B的函数转换为一个支持functor类型F[A] => F[B]的函数：
+
+```scala
+val func = (x: Int) => x + 1
+// func: Int => Int = <function1>
+
+val liftedFunc = Functor[Option].lift(func)
+// liftedFunc: Option[Int] => Option[Int] = cats.Functor$$Lambda$11698
+     /1847181061@41c6929b
+
+liftedFunc(Option(1))
+// res0: Option[Int] = Some(2)
+```
+
+##### 3.5.2 Functor Syntax
+
+对于Functor来说，map是它的主要方法，但由于List和Option原生就内置了map方法，所以在对它们使用map方法时，编译器首选的是内置的方法，而不是扩展方法，导致用它们来演示cats.Functor的map非常困难，但是我们可以看两个别的例子。
+
+我们先来看一下函数，在Scala中，单参数的函数并没有map方法（不过它有andThen方法，效果跟map方法一样），所以这里不会有map名字冲突的问题：
+
+```scala
+import cats.instances.function._ // for Functor
+import cats.syntax.functor._     // for map
+
+val func1 = (a: Int) => a + 1
+val func2 = (a: Int) => a * 2
+val func3 = (a: Int) => a + "!"
+val func4 = func1.map(func2).map(func3)
+func4(123)
+// res1: String = 248!
+```
+
+现在来看另一个例子，这一次我们将对functor进行抽象，所以这里将不会使用具体的类型，我们写一个方法它可以应用与一个Number类型的值而不需要关心它外部的context是什么：
+
+```scala
+def doMath[F[_]](start: F[Int])
+    (implicit functor: Functor[F]): F[Int] =
+  start.map(n => n + 1 * 2)
+
+import cats.instances.option._ // for Functor
+import cats.instances.list._   // for Functor
+
+doMath(Option(20))
+// res3: Option[Int] = Some(22)
+doMath(List(1, 2, 3))
+// res4: List[Int] = List(3, 4, 5)
+```
+
+为了说明它是如何工作的，我们来看一下cats.syntax.functor中map方法是如何实现的，这是一个简化代码：
+
+```scala
+implicit class FunctorOps[F[_], A](src: F[A]) {
+  def map[B](func: A => B)
+      (implicit functor: Functor[F]): F[B] =
+    functor.map(src)(func)
+}
+```
+
+如果该类型没有可用的内置map方法，编译器则会使用扩展方法插入map方法：
+
+```scala
+ foo.map(value => value + 1)
+```
+
+假设foo没有内置的map方法，在正常情况下编译器将会报错，但因为FunctorOps存在，编译器会自动将foo进行包装，这样就可以使用map方法了：
+
+ ```scala
+new FunctorOps(foo).map(value => value + 1)
+ ```
+
+FunctorOps中的map要求一个Functor类型的隐式参数，这意味着要在implict scope中存在对应类型的instance，否则编译将会报错：
+
+```scala
+final case class Box[A](value: A)
+
+val box = Box[Int](123)
+
+box.map(value => value + 1)
+
+// <console>:34: error: value map is not a member of Box[Int]
+//        box.map(value => value + 1)
+//  
+```
+
+##### 3.5.3 Instances for Custom Types
+
+声明一个functor只需要实现它的map方法即可，一个例子是Option类型Functor的实现，尽管在cats已经对它进行了实现，实现很简单，只需要使用Option内置的map方法即可：
+
+```scala
+implicit val optionFunctor: Functor[Option] =
+  new Functor[Option] {
+		def map[A, B](value: Option[A])(func: A => B): Option[B] = value.map(func)
+}
+```
+
+有些时候我们定义的instance需要某些依赖，比如要声明一个自定义关于Future类型的Functor instance（这里是假设，实际上cats已经提供了对应的instance），则需要考虑Future原生的map方法需要一个implicit参数ExecutionContext，但我们无法为Future的map方法添加一个参数，所以需要在创建instance加上依赖：
+
+```scala
+import scala.concurrent.{Future, ExecutionContext}
+implicit def futureFunctor(implicit ec: ExecutionContext): Functor[Future] =
+  new Functor[Future] {
+    def map[A, B](value: Future[A])(func: A => B): Future[B] = value.map(func)
+  }
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
