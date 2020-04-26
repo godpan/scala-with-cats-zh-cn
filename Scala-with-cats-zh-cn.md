@@ -1668,7 +1668,72 @@ implicit def futureFunctor(implicit ec: ExecutionContext): Functor[Future] =
   }
 ```
 
+每当我们直接用Functor.apply获取instance或者调用map扩展方法时，编译器都会从implict scope中递归寻找所需的依赖，比如下面这个例子：
 
+```scala
+// We write this:
+Functor[Future]
+
+// The compiler expands to this first:
+Functor[Future](futureFunctor)
+
+// And then to this:
+Functor[Future](futureFunctor(executionContext))
+```
+
+##### 3.5.4 Exercise: Branching out with Functors
+
+为Tree这种结构创建一个functor，确保它的Branch和Leaf能够正确运行：
+
+```scala
+sealed trait Tree[+A]
+
+final case class Branch[A](left: Tree[A], right: Tree[A])
+  extends Tree[A]
+
+final case class Leaf[A](value: A) extends Tree[A]
+```
+
+代码见[示例]()
+
+#### **3.6** *Contravariant* and Invariant Functors
+
+概念稍显复杂抽象且使用场景不是很丰富，暂不翻译
+
+。。。
+
+#### **3.7** *Contravariant* **and Invariant in Cats**
+
+概念稍显复杂抽象且使用场景不是很丰富，暂不翻译
+
+。。。
+
+#### 3.8.1 Unifying Type Constructors
+
+为了能够正确编译类似 func1.map(func2) 这种表达式，编译器将会去寻找Function1类型的Functor instance，我们知道Functor接收一个类型参数的类型构造器：
+
+```scala
+trait Functor[F[_]] {
+  def map[A, B](fa: F[A])(func: A => B): F[B]
+}
+```
+
+但是Function1拥有两个类型参数（一个是入参的类型一个是结果的类型）：
+
+```scala
+trait Function1[-A, +B] {
+  def apply(arg: A): B
+}
+```
+
+正常来说，编译的时候会报错，但编译器是如何解决这个问题的呢，简单来说它是如何将两个类型参数变成一个的呢，通常来说有两种方式：
+
+```scala
+type F[A] = Int => A
+type F[A] = A => Double
+```
+
+其实第一种方式才是正确的方式，但早期的scala版本却无法进行这种推理，细节可以参考[SI-2712](https://issues.scala-lang.org/browse/SI-2712)，
 
 
 
