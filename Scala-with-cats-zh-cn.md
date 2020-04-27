@@ -1708,6 +1708,28 @@ final case class Leaf[A](value: A) extends Tree[A]
 
 。。。
 
+
+
+#### Aside: Parti􏰁al Unificati􏰁on
+在3.2节中，我们遇到了一个奇怪的编译的错误，但是加上了-Ypartial-unification这个编译参数却能正确编译：
+```scala
+import cats.Functor
+import cats.instances.function._ // for Functor
+import cats.syntax.functor._     // for map
+
+val func1 = (x: Int)    => x.toDouble
+val func2 = (y: Double) => y * 2
+val func3 = func1.map(func2)
+// func3: Int => Double = scala.runtime.AbstractFunction1$$Lambda$7404
+     /1466963433@46f792aa
+```
+假如没有这个参数的话，则会报以下错误：
+```scala
+val func3 = func1.map(func2)
+// <console>: error: value map is not a member of Int => Double // val func3 = func1.map(func2)
+```
+显然“partial unification”是一个可选的编译参数，但如果不使用这个编译参数的话，上述的代码就会编译报错，现在我们需要花一点时间来讲讲这背后到底发生了什么以及如何解决这个问题。
+
 #### 3.8.1 Unifying Type Constructors
 
 为了能够正确编译类似 func1.map(func2) 这种表达式，编译器将会去寻找Function1类型的Functor instance，我们知道Functor接收一个类型参数的类型构造器：
@@ -1733,7 +1755,25 @@ type F[A] = Int => A
 type F[A] = A => Double
 ```
 
-其实第一种方式才是正确的方式，但早期的scala版本却无法进行这种推理，细节可以参考[SI-2712](https://issues.scala-lang.org/browse/SI-2712)，
+其实第一种方式才是正确的方式，但早期的scala版本却无法进行这种推理，细节可以参考[SI-2712](https://issues.scala-lang.org/browse/SI-2712)，现在这个bug已经修复，但是需要我们在build.sbt中添加一下参数：
+
+```scala
+scalacOptions += "-Ypartial-unification"
+```
+
+##### **3.8.2 Le􏰂ft-to-Right Elimina􏰁tion**
+不是很理解，暂时不翻译
+
+#### 3.9 Summary
+Functor象征着一种连续操作的行为，在本章中我们讲解了3种类型的functor：
+
+- 常规的Functor，拥有一个map方法，可以连续组合函数，函数的输出可以是另一个函数的输入。
+- Contravariant functor，拥有一个contramap方法，representthe ability to “prepend” func􏰁ons to a func􏰁on-like context. Successive calls to contramap sequence these func􏰁ons in the opposite order to map.
+- Invariant functor，拥有一个imap方法，represent bidirec􏰁onal transforma􏰁ons.
+
+通常来说常规的Functor是最常见的，但事实上，我们很少单独使用它们，但Functor的一些特殊抽象我们却使用很频繁，接下去的章节我们将学习其中的两种抽象：**monad**和**applica􏰀ve functor**。
+
+
 
 
 
