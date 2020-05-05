@@ -1773,7 +1773,35 @@ Functor象征着一种连续操作的行为，在本章中我们讲解了3种类
 
 通常来说常规的Functor是最常见的，但事实上，我们很少单独使用它们，但Functor的一些特殊抽象我们却使用很频繁，接下去的章节我们将学习其中的两种抽象：**monad**和**applica􏰀ve functor**。
 
+Functor对于集合来说非常重要，因为它可以对集合中的每个元素都可以进行独立的转换操作，这允许我们可以对一些超大集合进行分布式或者并行处理，这一点在Hadoop的“map-reduce”就是基于这一思想的，我们将在后面的Map-reduce案例中继续探索这一内容。
 
+The Contravariant and Invariant type classes are less widely applicable but are still useful for building data types that represent transformations. We will revisit them to discuss the Semigroupal type class later in Chapter 6.
+
+
+
+
+
+
+
+## Chapter 4
+
+## Monads
+
+**Monad**是Scala中最常见的抽象，许多人Scala程序员对其可能很熟悉，即使可能并不知道这种抽象叫做Monad。
+
+简单来说，monad其实就是拥有一个flatMap方法的结构，其实在前一章节中我们介绍的所有functor都是monad，比如Option，List，Future等，Scala甚至为Monod提供了一种特殊的语法，for表达式。然而尽管这个概念在Scala中无处不在，但Scala标准库并没有对这种概念进行具体的抽象，庆幸的是Cats为我们提供了对应的抽象。
+
+在本章中，我们将深入探索Monad，首先会从一些简单的例子了解它们，接着将会学习在Cats中是如何声明以及实现它们的，最后将会介绍几个你可能没见过但是很有趣的Monad，了解并学会使用它们。
+
+### 4.1 What is a Monad?
+
+这个问题在大量的博客文章中都被提及，并利用各种概念来描述这种抽象，比如cats, Mexican food, space suits full of toxic waste, and monoids in the category of endofunctors (whatever that means)，这些描述看起来还是太复杂，我们希望能用一个简单的描述就能阐述它的概念：
+
+> A monad is a mechanism for sequencing computations.（Monad是一种用于序列计算的机制。）
+
+看起来真的很简单，但真的仅仅如此吗？其实不然，我们在上一章节中讨论的Functor其实也是连续计算的模式，所以，我们还需更深入的讨论...
+
+在3.1章节中，我们说functor可以
 
 
 
