@@ -1797,13 +1797,13 @@ The Contravariant and Invariant type classes are less widely applicable but are 
 
 这个问题在大量的博客文章中都被提及，并利用各种概念来描述这种抽象，比如cats, Mexican food, space suits full of toxic waste, and monoids in the category of endofunctors (whatever that means)，这些描述看起来还是太复杂，我们希望能用一个简单的描述就能阐述它的概念：
 
-> A monad is a mechanism for sequencing computations.（Monad是一种用于序列计算的机制。）
+> A monad is a mechanism for sequencing computations.（Monad是一种用于序列运算的机制。）
 
-看起来真的很简单，但真的仅仅如此吗？其实不然，我们在上一章节中讨论的Functor其实也是连续计算的模式，所以，我们还需更深入的讨论...
+看起来真的很简单，但真的仅仅如此吗？其实不然，我们在上一章节中讨论的Functor其实也是连续运算的模式，所以，我们还需更深入的讨论...
 
-在3.1章节中，我们说functor可以
+在3.1章节中，我们说functor也是可以允许我们进行连续运算的，那么它跟Monad有什么区别的，其实简单来说
 
-
+functor只可以在运算的开始
 
 
 
