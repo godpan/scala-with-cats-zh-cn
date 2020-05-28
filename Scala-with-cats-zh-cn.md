@@ -1801,9 +1801,9 @@ The Contravariant and Invariant type classes are less widely applicable but are 
 
 看起来真的很简单，但真的仅仅如此吗？其实不然，我们在上一章节中讨论的Functor其实也是连续运算的模式，所以，我们还需更深入的讨论...
 
-在3.1章节中，我们说functor也是可以允许我们进行连续运算的，那么它跟Monad有什么区别的，其实简单来说
+In Sec􏰀on 3.1 we said that functors allow us to sequence computa􏰀ons ignor- ing some complica􏰀on. However, functors are limited in that they only allow this complica􏰀on to occur once at the beginning of the sequence. They don’t account further complica􏰀ons at each step in the sequence.
 
-functor只可以在运算的开始
+
 
 
 
