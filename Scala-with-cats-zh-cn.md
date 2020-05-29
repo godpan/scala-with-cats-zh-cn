@@ -1803,13 +1803,80 @@ The Contravariant and Invariant type classes are less widely applicable but are 
 
 In Sec􏰀on 3.1 we said that functors allow us to sequence computa􏰀ons ignor- ing some complica􏰀on. However, functors are limited in that they only allow this complica􏰀on to occur once at the beginning of the sequence. They don’t account further complica􏰀ons at each step in the sequence.
 
+这正是需要monad的原因，monad的flatMap方法允许我们进行一些复杂计算的操作，但它对操作的返回类型有要求，比如对Option来说，flatMap中的操作返回值也是Option，对于List来说flatMap中的操作返回值也是List，等等，因此特性，我们甚至可以对数据一直进行flatMap操作，我们来看一些示例。
 
+##### Options
 
+Option可以根据是否有返回值进行连续运算，比如下面这个例子：
 
+```scala
+def parseInt(str: String): Option[Int] =
+  scala.util.Try(str.toInt).toOption
 
+def divide(a: Int, b: Int): Option[Int] =
+  if(b == 0) None else Some(a / b)
+```
 
+这里的方法如果执行异常等失败情况则会返回None，如果是用Functor的map方法，我们则需要判断返回值有无然后再选择是否进行下一步操作，而flatMap方法则允许我们不用关心这个复杂性且直接可以进行连续计算：
 
+```scala
+def stringDivideBy(aStr: String, bStr: String): Option[Int] = 
+	parseInt(aStr).flatMap { aNum =>
+    parseInt(bStr).flatMap { bNum =>
+      divide(aNum, bNum)
+		} 
+  }
+```
 
+我们来看一下这段代码的含义：
+
+- 第一个parseInt可能返回一个None或者Some；
+- 假如返回的是一个Some，flatMap方法将会执行下一个方法并将这个值传递过去；
+- 第而个parseInt可能返回一个None或者Some；
+- 假如返回的是一个Some，flatMap方法将会执行下一个方法并将这个值传递过去；
+- 执行divide方法，返回一个None或者Some，就是我们最终的结果；
+
+在每一步中，flatMap都会选择是否需要执行下一个方法，参考图4.1：
+
+![scala-with-cats-4.1](./scala-with-cats-4.1.png)
+
+每一步计算的结果都是Option，所以我们可以连续的调用flatMap方法，根据结果我们就能快速知道是否执行失败了，因为只要执行过程中有一步返回的是None，那么最终返回的也是None：
+
+```scala
+stringDivideBy("6", "2")
+// res1: Option[Int] = Some(3)
+
+stringDivideBy("6", "0")
+// res2: Option[Int] = None
+
+stringDivideBy("6", "foo")
+// res3: Option[Int] = None
+
+stringDivideBy("bar", "2")
+// res4: Option[Int] = None
+```
+
+每一个Monad同样也是一个Functor（细节参考下文），所以我们可以同时使用flatMap和map，比如下面这个用for表达式的例子：
+
+```scala
+def stringDivideBy(aStr: String, bStr: String): Option[Int] = for {
+    aNum <- parseInt(aStr)
+    bNum <- parseInt(bStr)
+    ans  <- divide(aNum, bNum)
+} yield ans
+```
+
+##### Lists
+
+当一个新手Scala程序员第一次接触flatMap，会将它看成List的一个迭代方法，使用for表达式更能体现出这一点：
+
+```scala
+for {
+  x <- (1 to 3).toList
+  y <- (4 to 5).toList
+} yield (x, y)
+// res5: List[(Int, Int)] = List((1,4), (1,5), (2,4), (2,5), (3,4),(3,5))
+```
 
 
 
