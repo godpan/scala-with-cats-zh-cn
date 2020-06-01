@@ -1880,11 +1880,45 @@ for {
 
 
 
+#### 4.1.1 Defini􏰀on of a Monad
 
+上面我们仅仅讨论了flatMap，其实Monad包含两个方法：
 
+- pure: A=> F[A]
+- flatMap: (F[A], A => F[B]) => F[B]
 
+pure方法可以看作一个构造方法的抽象，将一个值放入一个monadic context中，flatMap方法我们已经讨论过了，主要提供连续计算的能力，从前一个context产生值并传递到下一个context中。我们来看一下Cats中对Monad类型的声明（简化版）：
 
+```scala
+import scala.language.higherKinds
 
+trait Monad[F[_]] {
+  def pure[A](value: A): F[A]
+  def flatMap[A, B](value: F[A])(func: A => F[B]): F[B]
+}
+```
+
+>*Monad Laws*
+>
+>pure和flatMap必须满足一些法则，才能保证我们在连续计算不出现异常情况以及副作用：
+>
+>*Left􏰂 iden􏰁tity*：使用pure方法然后再通过func方法转换与直接调用func方法的结果应该相等：
+>
+>```scala
+>pure(a).flatMap(func) == func(a)
+>```
+>
+>*Right iden􏰁tity*：在flatMap方法中调用pure方法，相当于没有做任何操作：
+>
+>```scala
+>m.flatMap(pure) == m
+>```
+>
+>*Associa􏰁vitity*：假设有f,g两个方法，应满足以下等式：
+>
+>```scala
+>m.flatMap(f).flatMap(g) == m.flatMap(x => f(x).flatMap(g))
+>```
 
 
 
