@@ -1878,6 +1878,46 @@ for {
 // res5: List[(Int, Int)] = List((1,4), (1,5), (2,4), (2,5), (3,4),(3,5))
 ```
 
+However, there is another mental model we can apply that highlights the monadic behaviour of List. If we think of Lists as sets of intermediate results, flatMap becomes a construct that calculates permutation􏰁s and combination􏰁ons.
+
+在这个例子中，x有3中可能的值，y有2种可能的值，这意味着他们之间的组合有6种可能，flatMap帮我们实现了这个组合，来看一下具体步骤：
+
+- 获取 x
+- 获取 y
+- 生成元组 (x, y)
+
+##### Futures
+
+Future也是一个Monad，所以它也可以进行连续运算的，而且你不用担心它是异步的：
+
+ ```scala
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global 
+import scala.concurrent.duration._
+
+def doSomethingLongRunning: Future[Int] = ???
+def doSomethingElseLongRunning: Future[Int] = ???
+
+def doSomethingVeryLongRunning: Future[Int] =
+  for {
+    result1 <- doSomethingLongRunning
+    result2 <- doSomethingElseLongRunning
+  } yield result1 + result2
+ ```
+
+使用FlatMap，我们就无需考虑令人恐怖的线程池以及调度等底层细节，只要声明每一步行为即可。
+
+如果你之前使用过for表达式，应该知道它是顺序运行的，转换为flatMap风格会更加清晰：
+
+```scala
+def doSomethingVeryLongRunning: Future[Int] =
+  doSomethingLongRunning.flatMap { result1 =>
+    doSomethingElseLongRunning.map { result2 =>
+      result1 + result2
+  } 
+}
+```
+
 
 
 
