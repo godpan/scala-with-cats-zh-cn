@@ -1962,6 +1962,26 @@ trait Monad[F[_]] {
 
 
 
+##### 4.1.2 Exercise: Ge􏰄tting Func-y
+
+每个Monad都是一个functor，所以我们也可以为它声明一个map方法：
+
+```scala
+import scala.language.higherKinds
+
+trait Monad[F[_]] {
+  def pure[A](a: A): F[A]
+  
+  def flatMap[A, B](value: F[A])(func: A => F[B]): F[B]
+  
+  def map[A, B](value: F[A])(func: A => B): F[B] = ???
+}
+```
+
+尝试去实现map方法吧，详情见[示例]()
+
+#### 4.2 Monads in Cats
+
 
 
 
