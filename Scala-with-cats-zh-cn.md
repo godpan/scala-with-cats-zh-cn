@@ -1918,7 +1918,11 @@ def doSomethingVeryLongRunning: Future[Int] =
 }
 ```
 
-每一个Future都从前一个Future中接收结果当作参数，换句话说，只有前一个Futrue完成了才能进行
+每一个Future都从前一个Future中接收结果当作参数，换句话说，只有前一个Futrue完成了才能执行下一个Future，可以参考图4.2：
+
+![scala-with-cats-4.1](./scala-with-cats-4.2.png)
+
+当然，我们也可以让future并行执行，但这又是另一个话题了，暂不讨论，因为Monad都是有序的。
 
 #### 4.1.1 Defini􏰀on of a Monad
 
@@ -1982,7 +1986,59 @@ trait Monad[F[_]] {
 
 #### 4.2 Monads in Cats
 
-是时候来看一下Cats中的Monad了，和之前的一样
+是时候来看一下Cats中的Monad了，和之前的一样我们也来看一下它的三个主要部分，type class，instances和syntax。
+
+##### 4.2.1 The Monad Type Class
+
+Moand的type class被声明为[cats.Monad](http://typelevel.org/cats/api/cats/Monad.html)，并继承了另外两个type class，分别为FlatMap：提供一个flatMap方法，Applicative：提供一个pure方法。并且Applicative继承了Functor，所以Monad也拥有map方法，关于Applicative我们将在第六章中讨论。
+
+下面是一些直接使用pure，flatMap，map方法的例子：
+
+```scala
+import cats.Monad
+import cats.instances.option._ // for Monad
+import cats.instances.list._   // for Monad
+
+val opt1 = Monad[Option].pure(3)
+// opt1: Option[Int] = Some(3)
+
+val opt2 = Monad[Option].flatMap(opt1)(a => Some(a + 2)) // opt2: Option[Int] = Some(5)
+
+val opt3 = Monad[Option].map(opt2)(a => 100 * a)
+// opt3: Option[Int] = Some(500)
+
+val list1 = Monad[List].pure(3)
+// list1: List[Int] = List(3)
+
+val list2 = Monad[List].
+  flatMap(List(1, 2, 3))(a => List(a, a*10))
+// list2: List[Int] = List(1, 10, 2, 20, 3, 30)
+
+val list3 = Monad[List].map(list2)(a => a + 123)
+// list3: List[Int] = List(124, 133, 125, 143, 126, 153)
+```
+
+除了上述的几个方法，Monad还包含很多其他方法，包括Functor的所有方法，详情可以参考文档[scaladoc](https://typelevel.org/cats/api/cats/Monad.html)。
+
+##### 4.2.2 Default Instances
+
+Cats同样为标准库中的类型提供了instances实现，比如Option，List，Vector等，并归类在[cats.instances](http://typelevel.org/cats/api/cats/instances/)这个包中:
+
+```scala
+import cats.instances.option._ // for Monad 
+Monad[Option].flatMap(Option(1))(a => Option(a*2))
+// res0: Option[Int] = Some(2)
+
+import cats.instances.list._ // for Monad
+Monad[List].flatMap(List(1, 2, 3))(a => List(a, a*10))
+// res1: List[Int] = List(1, 10, 2, 20, 3, 30)
+
+import cats.instances.vector._ // for Monad
+Monad[Vector].flatMap(Vector(1, 2, 3))(a => Vector(a, a*10))
+// res2: Vector[Int] = Vector(1, 10, 2, 20, 3, 30)
+```
+
+
 
 
 
