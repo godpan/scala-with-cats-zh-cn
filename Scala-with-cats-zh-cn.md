@@ -6,15 +6,15 @@
 
 本书的主要目的有两个：
 
-- 介绍monads, functors和其他函数式编程模式以及它们的设计结构；
-- 以上这些概念在Cats中是如何实现的；
+- 介绍 monads , functors 和其他函数式编程模式以及它们的设计结构；
+- 以上这些概念在 Cats 中是如何实现的；
 
-Monads及相关概念对于函数式编程来说，就相当于面向对象编程中的设计模式，主要用于重用设计。但相比面向对象设计模式来说主要有两个不同：
+Monads 及相关概念对于函数式编程来说，就相当于面向对象编程中的设计模式，主要用于重用设计。但相比面向对象设计模式来说主要有两个不同：
 
 - 它是有严格定义的
 - 它是非常普遍，通用的
 
-这两个点似乎非常难以理解，而且也非常抽象，然而，类似于Monads的概念却被应用在各种各样的场景中。
+这两个点似乎非常难以理解，而且也非常抽象，然而，类似于 Monads 的概念却被应用在各种各样的场景中。
 
 在这本书中我们通过多种方式来阐述这些概念，帮助你理解这些模型，它们是怎么使用的以及什么场景下是合适的。
 
@@ -24,7 +24,7 @@ Ok，让我们开始吧！
 
 ### 版本
 
-这本书是基于Scala 2.13.3和Cats 1.0.0，以下是build.sbt的一部分，包含相关的依赖和设置：
+这本书是基于 `Scala 2.12.3` 和 `Cats 1.0.0`，以下是build.sbt的一部分，包含相关的依赖和设置：
 
 ```scala
 scalaVersion := "2.12.3"
@@ -47,7 +47,7 @@ $ sbt new underscoreio/cats-seed.g8
 
  它会生成一个项目包含Cats的相关依赖，有关如何运行示例代码或者在Scala控制台进行交互，请参考README.md。
 
-cats-seed是一个最简版的template，如果你更喜欢ba􏰁eries-included star􏰀ng point，可以切换使用Typelevel的sbt-catalysts template:
+cats-seed 是一个最简版的 template，如果你更喜欢 ba􏰁eries-included star􏰀ng point，可以切换使用 Typelevel 的 sbt-catalysts template:
 
 ```shell
 $ sbt new typelevel/sbt-catalysts.g8
@@ -55,7 +55,7 @@ $ sbt new typelevel/sbt-catalysts.g8
 
  它会生成一个包含一组依赖和编译插件的工程，以及单元测试和[tut-enabled](https://github.com/tpolecat/tut) 文档（这个项目已经废弃）相关的模版，更多信息请看项目的主页[catalysts](https://github.com/typelevel/catalysts)和[sbt-catalysts](https://github.com/typelevel/sbt-catalysts)。
 
-以上操作需使用SBT 0.13.13及以上版本。
+以上操作需使用SBT 0.13.13 及以上版本。
 
 ### 本书排版
 
@@ -65,7 +65,7 @@ $ sbt new typelevel/sbt-catalysts.g8
 
 新的术语和短语以斜体显示。 在基础的介绍之后，将使用普通的罗马字体。
 
-程序代码，文件名以及文件内容中的术语将用等宽字体书写。 请注意，我们不会区分单数形式和复数形式。 例如，我们可能使用String或Strings来代表java.lang.String。
+程序代码，文件名以及文件内容中的术语将用等宽字体书写。 请注意，我们不会区分单数形式和复数形式。 例如，我们可能使用 `String` 或 `Strings` 来代表`java.lang.String`。
 
 对外部资源的引用将以超链接的形式出现， 另外使用超链接和等宽字体组合来引用API文档，例如：[scala.Option](https://www.scala-lang.org/api/current/scala/Option.html)。
 
@@ -75,7 +75,7 @@ $ sbt new typelevel/sbt-catalysts.g8
 
 ```scala
 object MyApp extends App {
-	println("Hello world!") // Print a fine message to the user!
+  println("Hello world!") // Print a fine message to the user!
 }
 ```
 
@@ -119,15 +119,15 @@ object MyApp extends App {
 
 ## 介绍
 
-Cats包含各种各样的函数式编程工具，并允许开发者自己选择想要使用的内容。 这些工具多数以type class的形式提供，我们可以将其应用于现有的Scala类型。
+Cats 包含各种各样的函数式编程工具，并允许开发者自己选择想要使用的内容。 这些工具多数以 type class 的形式提供，我们可以将其应用于现有的 Scala 类型。
 
-Type class是一种编程范式源自于Haskell，它允许我们不通过传统方式的继承以及修改代码的方式便可以给原有的代码加上新功能。
+Type class 是一种编程范式源自于 Haskell，它允许我们不通过传统的继承以及修改代码的方式便可以给原有的代码加上新功能。
 
-在本章中我们将会刷新你之前在[Essen􏰂al Scala]()这本书中理解的type  class 概念，首先我们来看一下Cats的代码库。我们将会使用两个type class的例子，Show 和 Eq，利用它们为这本书做一个铺垫。
+在本章中我们将会刷新你之前在 [Essen􏰂al Scala]() 这本书中理解的 type  class 概念，首先我们来看一下 Cats 的代码库。我们将会使用两个 type class 的例子，`Show` 和 `Eq`，利用它们为这本书做一个铺垫。
 
 我们将type class应用在抽象数据类型，模式匹配，value classes，和类型别名，presenti􏰂ng a structured approach to functi􏰂onal programming in Scala.
 
-（上述中的“class”这个词并不直接等价于scala或者java中的类）
+（上述中的“class”这个词并不直接等价于 scala 或者 java 中的类）
 
 
 
@@ -141,7 +141,7 @@ Type class模式主要由3个模块组成：
 
 #### 1.1.1 The Type Class
 
-Type class可以看成一个接口或者API，用于定义我们想要实现功能。在Cats中，Type class相当于至少带有一个类型参数的trait。举个例子，我们可以通过以下的代码描述一个基本的功能：“序列化成JSON”。
+Type class 可以看成一个接口或者 API，用于定义我们想要实现功能。在 Cats 中，Type class相当于至少带有一个类型参数的 trait。举个例子，我们可以通过以下的代码描述一个基本的功能：“序列化成 JSON”。
 
 ```scala
 // Define a very simple JSON AST 声明一些简单的JSON AST
@@ -157,13 +157,13 @@ trait JsonWriter[A] {
 }
 ```
 
- 这个例子中JsonWriter就是我们定义的一个type class，上述代码中还包含Json类型相关的代码。
+ 这个例子中 `JsonWriter` 就是我们定义的一个 type class，上述代码中还包含Json类型相关的代码。
 
 #### 1.1.2 Type Class Instances
 
-Type Class 实例就是对特定类型的Type Class的实现，包括Scala的基本类型以及我们自己定义的类型。
+Type Class 实例就是对特定类型的 Type Class 的实现，包括Scala的基本类型以及我们自己定义的类型。
 
-在Scala中，我们通过创建一个Type Class的实现来进行Type Class 实例的声明，并用**implicit**这个关键词进行标记：
+在Scala中，我们通过创建一个 Type Class 的实现来进行 Type Class 实例的声明，并用 **implicit** 这个关键词进行标记：
 
 ```scala
 final case class Person(name: String, email: String)
@@ -187,16 +187,16 @@ object JsonWriterInstances {
 
 #### 1.1.3 Type Class Interfaces
 
-Type Class  Interface包含对我们想要对外部暴露的功能。interfaces是指接受 type class instance 作为 `implicit` 参数的泛型方法。
+Type Class  Interface 包含对我们想要对外部暴露的功能。interfaces是指接受 type class instance 作为 `implicit` 参数的泛型方法。
 
-通常有两种方式去创建interface：
+通常有两种方式去创建 interface：
 
 - Interface Objects
 - Interface Syntax
 
 ##### Interface Objects
 
-创建interface最简单的方式就是将方法放在一个单例object中：
+创建 interface 最简单的方式就是将方法放在一个单例object中：
 
 ```scala
 object Json {
@@ -204,7 +204,7 @@ object Json {
 }
 ```
 
-在使用之前，我们需要导入我们所需的type class instances，然后就可以调用相关的方法：
+在使用之前，我们需要导入我们所需的 type class instances，然后就可以调用相关的方法：
 
 ```scala
 import JsonWriterInstances._
@@ -213,7 +213,7 @@ Json.toJson(Person("Dave", "dave@example.com"))
      (dave@example.com)))
 ```
 
-这里我们并没有指定对应的implicit parameters，但是编译器会帮我们在导入的type class instances中寻找一个跟相应类型匹配的type class instance，并插入对应的位置：
+这里我们并没有指定对应的 implicit parameters，但是编译器会帮我们在导入的 type class instances 中寻找一个跟相应类型匹配的 type class instance，并插入对应的位置：
 
 ```scala
 Json.toJson(Person("Dave", "dave@example.com"))(personWriter)
@@ -221,7 +221,7 @@ Json.toJson(Person("Dave", "dave@example.com"))(personWriter)
 
 ##### Interface Syntax
 
-我们也可以使用扩展方法使已存在的类型拥有interface methods，在Cats中将此称为“*syntax*”：
+我们也可以使用扩展方法使已存在的类型拥有 interface methods，在 Cats 中将此称为 “*syntax*”：
 
 ```scala
 object JsonSyntax {
@@ -232,7 +232,7 @@ object JsonSyntax {
 }
 ```
 
-使用interface syntax之前，我们除了导入它本身以外，还需导入我们所需的type class instance：
+使用 interface syntax 之前，我们除了导入它本身以外，还需导入我们所需的 type class instance：
 
 ```scala
 import JsonWriterInstances._
@@ -249,13 +249,13 @@ Person("Dave", "dave@example.com").toJson(personWriter)
 
 ##### The implicitly Method
 
-Scala标准库提供了一个泛型的type class interface叫做implicitly，它的声明非常简单：
+Scala 标准库提供了一个泛型的 type class interface 叫做 implicitly，它的声明非常简单：
 
 ```scala
  def implicitly[A](implicit value: A): A = value
 ```
 
-它接收一个implicit参数并返回该参数，我们可以使用implicitly调用implicit scope中的任意值，只需要指定对应的类型无需其他操作，便能得到对应的instance对象。
+它接收一个 implicit 参数并返回该参数，我们可以使用 implicitly 调用 implicit scope 中的任意值，只需要指定对应的类型无需其他操作，便能得到对应的 instance 对象。
 
 ```scala
 import JsonWriterInstances._
@@ -264,17 +264,17 @@ implicitly[JsonWriter[String]]
 // res8: JsonWriter[String] = JsonWriterInstances$$anon$1@38563298
 ```
 
-在Cats中，大多数type class都提供了其他方式去调用对应的instance。但是在代码调试过程中，implicitly有着很大的用处。我们可以在代码中插入implicitly相关代码，来确保编译器能找到对应的type class instance（若无对应的type class instance则编译的时候会抱错）以及不会出现歧义性（比如implicit scope存在两个相同的type class instance）。
+在 Cats 中，大多数 type class 都提供了其他方式去调用对应的 instance。但是在代码调试过程中，implicitly 有着很大的用处。我们可以在代码中插入implicitly 相关代码，来确保编译器能找到对应的 type class instance（若无对应的 type class instance 则编译的时候会抱错）以及不会出现歧义性（比如 implicit scope 存在两个相同的 type class instance）。
 
-### 1.2 Working with Implicits
+### 1.2 使用 Implicits
 
-对于Scala来说，使用type class就得跟 implicit values 和implicit parameters打交道，为了更好的使用它，我们需要了解以下几个点。
+对于 Scala 来说，使用 type class 就得跟 implicit values 和 implicit parameters 打交道，为了更好的使用它，我们需要了解以下几个点。
 
-#### 1.2.1 Packaging Implicits
+#### 1.2.1 组织 Implicits
 
 奇怪的是,在Scala中任何标记为implicit的定义都必须放在object或trait中，而不是放在顶层。在上一小节的例子中，我们将所有的type class instances打包放在JsonWriterInstances中。同样我们也可以把它放在JsonWriter的伴生对象中，这种方式在Scala中有特殊的含义，因为这些instances会直接在*implicit scope*里面，无需单独导入。
 
-#### 1.2.2 Implicit Scope
+#### 1.2.2 Implicit 作用域
 
 正如我们看到的一样，编译器会自动寻找对应类型的type class instances，举个例子，下面这个例子就会编译器就会自动寻找**JsonWriter[String]**对应的instance：
 
@@ -284,11 +284,11 @@ Json.toJson("A string!")
 
 编译器会从以下几个*implicit scope*中寻找适合的instance：
 
-- 自身及继承范围内的instance
-- 导入范围内的instance
-- 对应type class以及参数类型的伴生对象中
+- 自身及继承范围内的 instance
+- 导入范围内的 instance
+- 对应 type class 以及参数类型的伴生对象中
 
-只有用implicit关键词标注的instance才会在*implicit scope*，而且如果编译器在引入的implicit scope中发现重复的instance声明，则会编译抱错：
+只有用 implicit 关键词标注的instance才会在 *implicit scope*，而且如果编译器在引入的 implicit scope 中发现重复的 instance 声明，则会编译抱错：
 
 ```scala
 implicit val writer1: JsonWriter[String] =
@@ -305,7 +305,7 @@ Json.toJson("A string")
 //
 ```
 
-但Scala中的*implicit*规则远比这复杂的多，但这些不在本书的讨论范围之内（如果你想对*implicit*有更深入的了解，可以参考这些内容：[this Stack Overflow post on implicit scope](https://stackoverflow.com/questions/5598085/where-does-scala-look-for-implicits)和[this blog post on implicit priority](http://eed3si9n.com/revisiting-implicits-without-import-tax)）。对于我们来说，通常把type class instances放在以下四个地方：
+但 Scala 中的 *implicit* 规则远比这复杂的多，但这些不在本书的讨论范围之内（如果你想对 *implicit* 有更深入的了解，可以参考这些内容：[this Stack Overflow post on implicit scope](https://stackoverflow.com/questions/5598085/where-does-scala-look-for-implicits)和[this blog post on implicit priority](http://eed3si9n.com/revisiting-implicits-without-import-tax)）。对于我们来说，通常把type class instances放在以下四个地方：
 
 1. 一个单独的object中，比如上面提到的JsonWriterInstances；
 2. 一个单独的trait中；
@@ -1961,6 +1961,26 @@ trait Monad[F[_]] {
 >```
 
 
+
+##### 4.1.2 Exercise: Ge􏰄tting Func-y
+
+每个Monad都是一个functor，所以我们也可以为它声明一个map方法：
+
+```scala
+import scala.language.higherKinds
+
+trait Monad[F[_]] {
+  def pure[A](a: A): F[A]
+  
+  def flatMap[A, B](value: F[A])(func: A => F[B]): F[B]
+  
+  def map[A, B](value: F[A])(func: A => B): F[B] = ???
+}
+```
+
+尝试去实现map方法吧，详情见[示例]()
+
+#### 4.2 Monads in Cats
 
 
 
