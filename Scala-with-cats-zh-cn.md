@@ -412,7 +412,7 @@ Scala可以通过toString方法将一个任意一个值转换成String。但是�
 
 代码见[示例]()
 
-##### Using the Library
+#### 1.3.1 Using the Library
 
 我们可以把Printable这个功能封装成类库，然后在使用的地方引入，我们先来定义一个case class：
 
@@ -428,7 +428,7 @@ NAME is a AGE year-old COLOR cat.
 
  最后我们对功能进行了实现（代码见[示例]()）
 
-##### Bett􏰁er Syntax
+#### 1.3.2 Bett􏰁er Syntax
 
 我们将使用前面介绍的**Interface Syntax**的语法，让Printable相关的功能更容易使用：
 
@@ -456,7 +456,7 @@ trait Show[A] {
 }
 ```
 
-#### Impor􏰀ng Type Classes
+#### 1.4.1 Impor􏰀ng Type Classes
 
 Show这个type class声明在[cats](http://typelevel.org/cats/api/cats/)这个包里，我们可以直接进行import：
 
@@ -475,7 +475,7 @@ val showInt = Show.apply[Int]
 
 糟糕，竟然报错了，因为apply方法是通过implicit来查找对应的instance，所以我们需要导入相应的instance到implicit scope。
 
-#### Impor􏰀ng Default Instances
+#### 1.4.2 Impor􏰀ng Default Instances
 
  [cats.instances](https://typelevel.org/cats/api/cats/instances/)这个包提供了很多默认实现的instances，我们可以通过一下方式来引入它们，每种类型的包都包含了该类型对于Cats中所有type class的instance实现：
 
@@ -507,7 +507,7 @@ val stringAsString: String = showString.show("abc")
 // stringAsString: String = abc
 ```
 
-#### Impori􏰀ng Interface Syntax
+#### 1.4.3 Impori􏰀ng Interface Syntax
 
 我们可以使用*interface syntax*让Show变的更容易使用，首先我们需要先导入[cats.syntax.show](https://typelevel.org/cats/api/cats/syntax/package$$show$)，它会为任意类型添加一个show的扩展方法，前提是implicit scope已经有了对应类型的instance：
 
@@ -523,7 +523,7 @@ val shownString = "abc".show
 
 Cats为每一个type class都提供了syntax，我们可以按需使用，在后面的章节，我们会继续它们。
 
-#### **Impori􏰀ng All The Things!**
+#### 1.4.4 Impori􏰀ng All The Things!
 
 在这本书中，我们对于每个示例都是按需导入，只导入需要的instance和syntax。然而，有些时候这也是相当费时的，你可以通过以下方式简化导入：
 
@@ -541,7 +541,7 @@ import cats.implicits._
 
 但当遇到命名冲突或者implicit冲突的时候，我们就需要更具体导入。
 
-#### Defining Custom Instances
+#### 1.4.5 Defining Custom Instances
 
 下面我们来自定义一个关于Show的instance：
 
@@ -595,7 +595,7 @@ List(1, 2, 3).map(Option(_)).filter(item => item == 1)
 
 这是开发者的错，我们应该用Some(1)去比较而不是1。然而这在技术上来说并不能说它是错的，因为==可以作用于任意的两个对象，不用关心具体的类型。Eq的设计，解决了这个问题，因为它是类型安全的。
 
-#### **1.5.1 Equality, Liberty, and Fraternity**
+#### 1.5.1 Equality, Liberty, and Fraternity
 
 我们可以使用Eq对任意给定类型的对象进行类型安全的判等：
 
@@ -863,7 +863,7 @@ final case object C extends A
 
 很明显，没有完美的类型系统。Cats更倾向于使用不变的类型，这意味着我们需要指定更具体的instance，举个例子一个Some[Int]的值直接使用Option[Int]类型的instance，如果需要的话，可以将Some[Int]类型的值声明为Option[Int]，比如 Some(1) : Option[Int]，或者使用一些更便捷的方法，比如我们在之前1.5.3章节中看到的Option.apply, Option.empty, some, none等方法。
 
-#### **1.7 Summary**
+### 1.7 Summary
 
 在本章中，我们首先学习了什么是type class，然后实现了一个我们自己定义的type class：Printable，紧接着我们学习了Cats中的两个type class：Show和Eq。
 
@@ -1261,9 +1261,9 @@ Monoid是学习Cats最好的引路石，因为它容易理解并且使用简单�
 
 
 
-#### **Chapter 3**
+### Chapter 3
 
-### **Functors**
+### Functors
 
 本章我们将来探索**functors**，它是一种抽象，代表着对一些context有着连续操作的能力，比如List，Option等，Functor本身并不是很用，但是它的一些特例比如**monad**和**applica􏰀ve functor**却在Cats中被广泛使用。
 
@@ -1371,7 +1371,7 @@ Await.result(future, 1.second)
 
 由于Future不是引用透明的，我们或许应该来看下另一种数据类型，你可能已经见过了...
 
-##### Func􏰁ons (?!)
+##### Functions (?!)
 
 一个参数的functi􏰁on也是一个functor，To see this we have to tweak the types a li􏰃le，一个A =>B的function包含两个类型参数，一个参数类型A，一个返回类型B，我们来看一下步骤：
 
@@ -1440,7 +1440,7 @@ func(123)
 >
 > 有关改内容的详细信息将会在3.8章节探讨。
 
-##### 3.3 Defini􏰁on of a Functor
+#### 3.3 Defini􏰁on of a Functor
 
 上面我们看到的例子都是functor，表现是都支持连续运算。准确的说，对于一个类型F[A]，如果它存在一个map操作，传入A=>B的函数，并返回F[B]，那么我们可以称F[A]是一个functor，用图表示：
 
@@ -1696,13 +1696,13 @@ final case class Leaf[A](value: A) extends Tree[A]
 
 代码见[示例]()
 
-#### **3.6** *Contravariant* and Invariant Functors
+#### 3.6 Contravariant and Invariant Functors
 
 概念稍显复杂抽象且使用场景不是很丰富，暂不翻译
 
 。。。
 
-#### **3.7** *Contravariant* **and Invariant in Cats**
+#### 3.7 Contravariant and Invariant in Cats
 
 概念稍显复杂抽象且使用场景不是很丰富，暂不翻译
 
@@ -1710,7 +1710,7 @@ final case class Leaf[A](value: A) extends Tree[A]
 
 
 
-#### Aside: Parti􏰁al Unificati􏰁on
+#### 3.8 Aside: Parti􏰁al Unificati􏰁on
 在3.2节中，我们遇到了一个奇怪的编译的错误，但是加上了-Ypartial-unification这个编译参数却能正确编译：
 ```scala
 import cats.Functor
@@ -1730,7 +1730,7 @@ val func3 = func1.map(func2)
 ```
 显然“partial unification”是一个可选的编译参数，但如果不使用这个编译参数的话，上述的代码就会编译报错，现在我们需要花一点时间来讲讲这背后到底发生了什么以及如何解决这个问题。
 
-#### 3.8.1 Unifying Type Constructors
+##### 3.8.1 Unifying Type Constructors
 
 为了能够正确编译类似 func1.map(func2) 这种表达式，编译器将会去寻找Function1类型的Functor instance，我们知道Functor接收一个类型参数的类型构造器：
 
@@ -1761,7 +1761,7 @@ type F[A] = A => Double
 scalacOptions += "-Ypartial-unification"
 ```
 
-##### **3.8.2 Le􏰂ft-to-Right Elimina􏰁tion**
+##### 3.8.2 Le􏰂ft-to-Right Elimina􏰁tion
 不是很理解，暂时不翻译
 
 #### 3.9 Summary
@@ -1918,7 +1918,7 @@ def doSomethingVeryLongRunning: Future[Int] =
 }
 ```
 
-
+每一个Future都从前一个Future中接收结果当作参数，换句话说，只有前一个Futrue完成了才能进行
 
 #### 4.1.1 Defini􏰀on of a Monad
 
