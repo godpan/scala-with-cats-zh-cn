@@ -1982,7 +1982,7 @@ trait Monad[F[_]] {
 
 #### 4.2 Monads in Cats
 
-
+是时候来看一下Cats中的Monad了，和之前的一样
 
 
 
