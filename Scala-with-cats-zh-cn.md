@@ -2038,7 +2038,7 @@ Monad[Vector].flatMap(Vector(1, 2, 3))(a => Vector(a, a*10))
 // res2: Vector[Int] = Vector(1, 10, 2, 20, 3, 30)
 ```
 
-
+Cats同样提供Future类型的Monad实现，但不同于标准库中的Future类，因为pure和flatMap无法接收一个ExecutionContext类型的implict参数（因为这些参数并没有声明在Monad接口中）。如果要解决这个问题，我们必须在
 
 
 
