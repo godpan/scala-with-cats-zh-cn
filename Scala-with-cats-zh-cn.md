@@ -2312,6 +2312,112 @@ def countPositive(nums: List[Int]) =
 //
 ```
 
+导致这段代码编译错误有以下两个原因：
+
+- 编译器会将accumulator的类型推导为Right而不是Either；
+- 使用Right.apply我们无法指定特定类型，编译器默认会将Left的类型设置为Nothing；
+
+使用asRight则可以避免这些问题，asRight返回的是一个Either类型的值，并支持传入Left值的类型：
+
+```scala
+def countPositive(nums: List[Int]) = 
+	nums.foldLeft(0.asRight[String]) { (accumulator, num) =>
+    if(num > 0) {
+      accumulator.map(_ + 1)
+    } else {
+      Left("Negative. Stopping!")
+		} 
+  }
+
+countPositive(List(1, 2, 3))
+// res5: Either[String,Int] = Right(3)
+
+countPositive(List(1, -2, 3))
+// res6: Either[String,Int] = Left(Negative. Stopping!)
+```
+
+另外cats.syntax.either还在Either的伴生对象中添加了一些有用的扩展方法，catchOnly和catchNonFatal用于捕获异常：
+
+```scala
+Either.catchOnly[NumberFormatException]("foo".toInt)
+// res7: Either[NumberFormatException,Int] = Left(java.lang.NumberFormatException: For input string: "foo")
+
+Either.catchNonFatal(sys.error("Badness"))
+// res8: Either[Throwable,Nothing] = Left(java.lang.RuntimeException:Badness)
+```
+
+同时它也提供了一些方法，可以用于从其他数据类型转换为Either类型：
+
+```scala
+Either.fromTry(scala.util.Try("foo".toInt))
+// res9: Either[Throwable,Int] = Left(java.lang.NumberFormatException: For input string: "foo")
+
+Either.fromOption[String, Int](None, "Badness") // res10: Either[String,Int] = Left(Badness)
+```
+
+##### 4.4.3 Transforming Eithers
+
+cats.syntax.either同样为Either提供了一些非常有用的方法，我们可以通过`orElse`和`getOrElse`获取Either中的Right值或者返回一个默认值：
+
+```scala
+import cats.syntax.either._
+
+"Error".asLeft[Int].getOrElse(0)
+// res11: Int = 0
+
+"Error".asLeft[Int].orElse(2.asRight[String])
+// res12: Either[String,Int] = Right(2)
+```
+
+ensure方法允许我们判断Right的值是否满足条件：
+
+```scala
+ -1.asRight[String].ensure("Must be non-negative!")(_ > 0) 
+// res13: Either[String,Int] = Left(Must be non-negative!)
+```
+
+recover和recoverWith方法提供了错误处理的能力，与Future中同名方法的功能类似（标准库中的Future也有recover和recoverWith）：
+
+```scala
+"error".asLeft[Int].recover {
+  case str: String => -1
+}
+// res14: Either[String,Int] = Right(-1)
+
+"error".asLeft[Int].recoverWith {
+  case str: String => Right(-1)
+}
+// res15: Either[String,Int] = Right(-1)
+```
+
+ leftMap和bimap方法是对map方法的补充：
+
+```scala
+"foo".asLeft[Int].leftMap(_.reverse)
+// res16: Either[String,Int] = Left(oof)
+
+6.asRight[String].bimap(_.reverse, _ * 7)
+// res17: Either[String,Int] = Right(42)
+
+"bar".asLeft[Int].bimap(_.reverse, _ * 7)
+// res18: Either[String,Int] = Left(rab)
+```
+
+swap方法允许我们交换Left和RIght的值：
+
+```scala
+123.asRight[String]
+// res19: Either[String,Int] = Right(123)
+
+123.asRight[String].swap
+// res20: scala.util.Either[Int,String] = Left(123)
+```
+
+最后，Cats还提供了许多将Either类型转换为其他类型的方法，比如：toOption，toList，toTry，toValidated等等。
+
+##### 4.4.4 Error Handling
+
+
 
 
 
