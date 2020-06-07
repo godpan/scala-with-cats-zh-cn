@@ -2038,11 +2038,279 @@ Monad[Vector].flatMap(Vector(1, 2, 3))(a => Vector(a, a*10))
 // res2: Vector[Int] = Vector(1, 10, 2, 20, 3, 30)
 ```
 
-Cats同样提供Future类型的Monad实现，但不同于标准库中的Future类，因为pure和flatMap无法接收一个ExecutionContext类型的implict参数（因为这些参数并没有声明在Monad接口中）。如果要解决这个问题，我们必须在
+Cats同样提供Future类型的Monad实现，但不同于标准库中的Future类，因为pure和flatMap无法接收一个ExecutionContext类型的implict参数（因为这些参数并没有声明在Monad接口中）:
 
+```scala
+import cats.instances.future._ // for Monad
+import scala.concurrent._
+import scala.concurrent.duration._
 
+val fm = Monad[Future]
+// <console>:37: error: could not find implicit value for parameterinstance: cats.Monad[scala.concurrent.Future] 
+// val fm = Monad[Future]
+```
 
+如果要解决这个问题，我们必须在当前的scope中导入ExecutionContext：
 
+```scala
+import scala.concurrent.ExecutionContext.Implicits.global
+
+val fm = Monad[Future]
+// fm: cats.Monad[scala.concurrent.Future] = cats.instances.FutureInstances$$anon$1@53c37657
+```
+
+后续再调用pure和flatMap方法的时候将会使用该ExecutionContext：
+
+```scala
+val future = fm.flatMap(fm.pure(1))(x => fm.pure(x + 2))
+Await.result(future, 1.second)
+// res3: Int = 3
+```
+
+除了上述的所讲Monad以外，Cats还提供了一些新的Monad，它们不在标准库中出现过，稍后我们将会讲解其中的部分Monad。
+
+##### 4.2.3 Monad Syntax
+
+关于Monad的syntax被放置在下面3个地方：
+
+- [cats.syntax.flatMap](https://typelevel.org/cats/api/cats/syntax/package$$flatMap$)：提供关于flatMap方法syntax；
+- [cats.syntax.functor](https://typelevel.org/cats/api/cats/syntax/package$$functor$)：提供关于map方法syntax；
+- [cats.syntax.applicative](https://typelevel.org/cats/api/cats/syntax/package$$applicative$)：提供关于pure方法syntax；
+
+在练习中，我们通常通过import cats.implicits._ 来导入所有的所需的内容，然而为了更代码更能阐述意图，应该使用特定导入更加合适。
+
+我们可以通过pure方法来构造一个monad实例，但我们需要指定类型参数来区分构造instance的类型：
+
+```scala
+import cats.instances.option._   // for Monad
+import cats.instances.list._     // for Monad
+import cats.syntax.applicative._ // for pure
+
+1.pure[Option]
+// res4: Option[Int] = Some(1)
+
+1.pure[List]
+// res5: List[Int] = List(1)
+```
+
+pure方法我们可以很容易演示它的效果，但对于Option，List等Scala标准库中Monad，演示Cats中的map和flatMap方法却非常困难，因为在标准库中它们已经有了默认的实现，所以这里我们通过一个泛型方法来解决这个问题：
+
+```scala
+import cats.Monad
+import cats.syntax.functor._ // for map
+import cats.syntax.flatMap._ // for flatMap
+import scala.language.higherKinds
+
+def sumSquare[F[_]: Monad](a: F[Int], b: F[Int]): F[Int] = 
+	a.flatMap(x => b.map(y => x*x + y*y))
+
+import cats.instances.option._ // for Monad
+import cats.instances.list._   // for Monad
+
+sumSquare(Option(3), Option(4))
+// res8: Option[Int] = Some(25)
+
+sumSquare(List(1, 2, 3), List(4, 5))
+// res9: List[Int] = List(17, 26, 20, 29, 25, 34)
+```
+
+我们也可以将sumSquare用for表达式重构，同样可以得到正确的结果：
+
+```scala
+def sumSquare[F[_]: Monad](a: F[Int], b: F[Int]): F[Int] = 
+  for {
+  	x <- a
+    y <- b
+  } yield x*x + y*y
+
+sumSquare(Option(3), Option(4))
+// res10: Option[Int] = Some(25)
+
+sumSquare(List(1, 2, 3), List(4, 5))
+// res11: List[Int] = List(17, 26, 20, 29, 25, 34)
+```
+
+通过上面的例子，我们或多或少对Cats中的Monad已经有了一定的了解，现在让我们来看一下非常实用但是又没在标准库中出现过的Monad。
+
+#### 4.3 The Identi􏰁ty Monad
+
+在上一章节，我们写了一个抽象的泛型方法来演示Monad的flatMap和map方法：
+
+```scala
+import scala.language.higherKinds
+import cats.Monad
+import cats.syntax.functor._ // for map
+import cats.syntax.flatMap._ // for flatMap
+
+def sumSquare[F[_]: Monad](a: F[Int], b: F[Int]): F[Int] = 
+	for {
+		x <- a
+    y <- b
+  } yield x*x + y*y
+```
+
+这个方法传入Option和List类型都是可行的，但我们无法让它作用于一个普通的值：
+
+```scala
+sumSquare(3, 4)
+// <console>:22: error: no type parameters for method sumSquare: (a: F [Int], b: F[Int])(implicit evidence$1: cats.Monad[F])F[Int] exist so that it can be applied to arguments (Int, Int) 
+// --- because ---
+// argument expression's type is not compatible with formal parameter type;
+// found :Int
+// required: ?F[Int]
+// 		sumSquare(3, 4)
+// ^
+// <console>:22: error: type mismatch; // found : Int(3)
+// required: F[Int]
+// 		sumSquare(3, 4)
+// ^
+// <console>:22: error: type mismatch; // found : Int(4)
+// required: F[Int]
+// 		sumSquare(3, 4)
+//
+```
+
+如果能让sumSquare既能作用于Monad类型也能作用于非Monad类型，那么就非常棒了，很幸运，Cats提供了Id这个类型来解决这个问题：
+
+```scala
+import cats.Id
+
+sumSquare(3 : Id[Int], 4 : Id[Int])
+// res2: cats.Id[Int] = 25
+```
+
+Id允许我们调用仅支持Monad类型参数方法的时候传入一个普通值，但这种方式让我们的代码语义变得很难以理解，首先它将方法参数强制转换为Id[Int]，并且结果返回的也是Id[Int]。
+
+那这到底是怎么回事呢？我们先来看一下Id的定义：
+
+```scala
+package cats
+
+type Id[A] = A
+```
+
+Id其实一个类型别名，它将一个原子类型转换为单参数类型构造器，也就是说我们可以将任何类型转换为对应的Id：
+
+```scala
+"Dave" : Id[String]
+// res3: cats.Id[String] = Dave
+
+123 : Id[Int]
+// res4: cats.Id[Int] = 123
+
+List(1, 2, 3) : Id[List[Int]]
+// res5: cats.Id[List[Int]] = List(1, 2, 3)
+```
+
+Cats为Id提供了各种类型type class的instance实现，包括我们前面说过的Functor和Monad，它允许我们对一个普通的值调用map，pure以及flatMap方法：
+
+```scala
+val a = Monad[Id].pure(3)
+// a: cats.Id[Int] = 3
+
+val b = Monad[Id].flatMap(a)(_ + 1)
+// b: cats.Id[Int] = 4
+
+import cats.syntax.functor._ // for map
+import cats.syntax.flatMap._ // for flatMap
+
+for {
+	x <- a
+  y <- b
+} yield x + y
+// res6: cats.Id[Int] = 7
+```
+
+让一段抽象代码能适用于monad和非monad类型的能力是非常有用的，举个例子，we can run code asynchronously in produc􏰁on using Fu- ture and synchronously in test using Id. We’ll see this in our first case study in Chapter 8.
+
+##### 4.3.1 Exercise: Monadic Secret Identities
+
+为Id实现pure，map以及flatMap方法，在过程中你有哪些有趣的发现呢？
+
+详情见[示例]()
+
+#### 4.4 Either
+
+让我们来看另一个很有用的Monad：标准库中的Either。在Scala 2.11及更早版本中，Either并不会被当作一个的Monad因为它没有map和flatMap方法，但在Scala 2.12之后，Either became *right biased*。
+
+##### 4.4.1 Le􏰂ft and Right Bias
+
+在Scala 2.11版本中，Either并没有默认的map和flatMap方法，这让我们在for表达式中使用Either变的不是很方便，每个表达式都需要额外调用`.right`：
+
+```scala
+val either1: Either[String, Int] = Right(10)
+val either2: Either[String, Int] = Right(32)
+
+for {
+  a <- either1.right
+  b <- either2.right
+} yield a + b
+// res0: scala.util.Either[String,Int] = Right(42)
+```
+
+在Scala 2.12之后，Either进行了重新设计，新的Either决定Right一方即为正确，所以它可以支持map和flatMap方法了，这让我们在for表达式中使用Either变得更加愉快：
+
+```scala
+for {
+  a <- either1
+  b <- either2
+} yield a + b
+// res1: scala.util.Either[String,Int] = Right(42)
+```
+
+在Scala 2.11及以前的版本，可以通过import Cats中的cats.syntax.either来达到让Either拥有map和flatMap方法，同时这个导入方式也兼容Scala的任意版本，在Scala 2.12+也可以正常工作：
+
+```scala
+import cats.syntax.either._ // for map and flatMap
+
+for {
+  a <- either1
+  b <- either2
+} yield a + b
+```
+
+##### 4.4.2 Crea􏰁ting Instances
+
+我们除了可以直接通过创建Left和Right实例来达到创建一个Either实例以外，同样可以通过Cats的中的扩展方法：asLeft和asRight来创建一个Either实例，要使用它们，受限需要导入cats.syntax.either：
+
+```scala
+import cats.syntax.either._ // for asRight
+
+val a = 3.asRight[String]
+// a: Either[String,Int] = Right(3)
+
+val b = 4.asRight[String]
+// b: Either[String,Int] = Right(4)
+
+for {
+  x <- a
+  y <- b
+} yield x*x + y*y
+// res4: scala.util.Either[String,Int] = Right(25)
+```
+
+这种 “smart constructors” 想比于Left.apply和Right.apply有这很大的优势，因为前者返回的是一个Either类型，而后者返回的是一个Left或者Right类型，它可以避免一些类型推导的错误，比如下面这个例子：
+
+```scala
+def countPositive(nums: List[Int]) =
+  nums.foldLeft(Right(0)) { (accumulator, num) =>
+    if(num > 0) {
+      accumulator.map(_ + 1)
+    } else {
+      Left("Negative. Stopping!")
+	} 
+}
+// <console>:21: error: type mismatch;
+// found : scala.util.Either[Nothing,Int] 
+// required: scala.util.Right[Nothing,Int] 
+//            accumulator.map(_ + 1)
+                       // ^
+// <console>:23: error: type mismatch;
+// found : scala.util.Left[String,Nothing] 
+// required: scala.util.Right[Nothing,Int] 
+//						Left("Negative. Stopping!") 
+//
+```
 
 
 
