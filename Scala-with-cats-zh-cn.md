@@ -2518,7 +2518,94 @@ trait MonadError[F[_], E] extends Monad[F] {
 MonadError主要声明了两个类型：
 
 - F：代表Monad的类型；
-- E：
+- E：is the type of error contained within F.
+
+ 为了演示这些类型的组合，我们来看一下下面这个例子，这里用Either来代表F类型（Either是一个Monad）:
+
+```scala
+import cats.MonadError
+import cats.instances.either._ // for MonadError
+
+type ErrorOr[A] = Either[String, A]
+val monadError = MonadError[ErrorOr, String]
+```
+
+>*Applica􏰀veError*
+>
+>实际上，MonadError继承了另一个type class：**Applica􏰀veError**，但我们之前并未遇到过Applica􏰀ve，所以这里就不展开讨论了，我们将会在第六章讲解这部分内容。
+
+##### 4.5.2 Raising and Handling Errors
+
+raiseError和handleError是MonadError中非常重要的两个方法，其中raiseError跟我们之前说pure方法很类似，用于创建一个instance，只不过raiseError代表着失败：
+
+```scala
+val success = monadError.pure(42)
+// success: ErrorOr[Int] = Right(42)
+
+val failure = monadError.raiseError("Badness")
+// failure: ErrorOr[Nothing] = Left(Badness)
+```
+
+handleError是raiseError的一个补充，它允许我们处理处理并返回成功的结果，跟Future的recover方法很类似：
+
+ ```scala
+monadError.handleError(failure) {
+  case "Badness" =>
+    monadError.pure("It's ok")
+  case other =>
+    monadError.raiseError("It's not ok")
+}
+// res2: ErrorOr[ErrorOr[String]] = Right(Right(It's ok))
+ ```
+
+另一个有用的方法是ensure，它的功能跟filter很类似，如果不满足条件则返回一个错误：
+
+```scala
+import cats.syntax.either._ // for asRight
+
+monadError.ensure(success)("Number too low!")(_ > 1000) 
+// res3: ErrorOr[Int] = Left(Number too low!)
+```
+
+Cats通过[cats.syntax.applicativeError](http://typelevel.org/cats/api/cats/syntax/package$$applicativeError$)为raiseError和handleError提供对应的syntax，ensure的syntax则由[cats.syntax.monadError](http://typelevel.org/cats/api/cats/syntax/package$$monadError$)提供：
+
+```scala
+import cats.syntax.applicative._ // for pure
+import cats.syntax.applicativeError._ // for raiseError etc 
+import cats.syntax.monadError._ // for ensure
+
+val success = 42.pure[ErrorOr]
+// success: ErrorOr[Int] = Right(42)
+
+val failure = "Badness".raiseError[ErrorOr, Int]
+// failure: ErrorOr[Int] = Left(Badness)
+
+success.ensure("Number to low!")(_ > 1000)
+// res4: Either[String,Int] = Left(Number to low!)
+```
+
+除了上述的方法以外，MoandError还提供许多其他有用的方法，具体信息请参考[MonadError](http://typelevel.org/cats/api/cats/MonadError.html)和[ApplicativeError](http://typelevel.org/cats/api/cats/ApplicativeError.html)的源码。
+
+##### 4.5.3 Instances of MonadError
+
+Cats为许多类型提供了MonadError instance，比如Future，Either，Try，其中Either instance可以自定义错误类型，而Future和Try的错误类型通常是Throwable：
+
+```scala
+import scala.util.Try
+import cats.instances.try_._ // for MonadError
+
+val exn: Throwable =
+  new RuntimeException("It's all gone wrong")
+
+exn.raiseError[Try, Int]
+// res6: scala.util.Try[Int] = Failure(java.lang.RuntimeException: It' s all gone wrong)
+```
+
+##### 4.5.4 Exercise: Abstrac􏰁ng
+
+#### 4.6 The Eval Monad
+
+
 
 
 
