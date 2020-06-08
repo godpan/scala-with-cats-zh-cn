@@ -2417,6 +2417,131 @@ swap方法允许我们交换Left和RIght的值：
 
 ##### 4.4.4 Error Handling
 
+Either主要用于快速的错误处理，我们通常使用flatMap来进行连续计算，当前一个计算失败时，后续的计算应该都不去执行：
+
+```scala
+for {
+  a <- 1.asRight[String]
+  b <- 0.asRight[String]
+  c <- if(b == 0) "DIV0".asLeft[Int]
+       else (a / b).asRight[String]
+} yield c * 100
+// res21: scala.util.Either[String,Int] = Left(DIV0)
+```
+
+当我们使用Either来进行错误处理的时候，需要指定什么类型用来代表错误，比如我们可以使用Throwable：
+
+```scala
+ type Result[A] = Either[Throwable, A]
+```
+
+这跟scala.util.Try的语义很类似，但有一个问题，Throwable是一个极其普遍的类型，导致很多时候我们不知道具体发生的错误类型。
+
+另一种方式就是通过声明一种代数数据类型来代表错误，比如下面这个例子：
+
+```scala
+sealed trait LoginError extends Product with Serializable 
+
+final case class UserNotFound(username: String) extends LoginError
+
+final case class PasswordIncorrect(username: String) extends LoginError
+
+case object UnexpectedError extends LoginError
+
+case class User(username: String, password: String)
+
+type LoginResult = Either[LoginError, User]
+```
+
+这种方式可以解决我们上面所说的问题，预期的错误都确定了对应的类型，对于未知的错误用UnexpectedError代替，我们还可以通过模式匹配对错误进行处理：
+
+```scala
+// Choose error-handling behaviour based on type:
+def handleError(error: LoginError): Unit =
+  error match {
+    case UserNotFound(u) =>
+      println(s"User not found: $u")
+    case PasswordIncorrect(u) =>
+      println(s"Password incorrect: $u")
+    case UnexpectedError =>
+      println(s"Unexpected error")
+}
+
+val result1: LoginResult = User("dave", "passw0rd").asRight
+// result1: LoginResult = Right(User(dave,passw0rd))
+
+val result2: LoginResult = UserNotFound("dave").asLeft 
+// result2: LoginResult = Left(UserNotFound(dave))
+
+result1.fold(handleError, println)
+// User(dave,passw0rd)
+
+result2.fold(handleError, println)
+// User not found: dave
+```
+
+##### 4.4.5 Exercise: What is Best?
+
+ 前面所讲的错误处理策略是否适用于所有场景？我们还需要错误处理支持哪些其他功能？
+
+详情见[示例]()
+
+#### 4.5 Aside: Error Handling and MonadError
+
+Cats提供了一个与Either类似，专门用于错误处理的type class：MonadError，它提供了一些额外的方法来处理错误。
+
+>本章是可选的！
+>
+>除非你想要对Monad进行错误处理，否则你不需要使用MonadError。比如你可以使用MoandError对Future和Try，或者Either和EitherT（我们将会在第五章中讲解）进行抽象错误处理。
+>
+>如果你不需要这些，可以直接跳过。
+
+##### 4.5.1 The MonadError Type Class
+
+下面是MonadError的一个简单声明：
+
+```scala
+package cats
+trait MonadError[F[_], E] extends Monad[F] {
+  // Lift an error into the `F` context:
+  def raiseError[A](e: E): F[A]
+  
+  // Handle an error, potentially recovering from it:
+  def handleError[A](fa: F[A])(f: E => A): F[A]
+  
+  // Test an instance of `F`,
+  // failing if the predicate is not satisfied:
+  def ensure[A](fa: F[A])(e: E)(f: A => Boolean): F[A]
+}
+```
+
+MonadError主要声明了两个类型：
+
+- F：代表Monad的类型；
+- E：
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
