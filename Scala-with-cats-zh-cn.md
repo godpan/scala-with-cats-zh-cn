@@ -2520,7 +2520,7 @@ MonadError主要声明了两个类型：
 - F：代表Monad的类型；
 - E：is the type of error contained within F.
 
- 为了演示这些类型的组合，我们来看一下下面这个例子，这里用Either来代表F类型（Either是一个Monad）:
+ 为了演示这些类型的组合，我们来看一个例子，这里用Either来代表F类型（Either是一个Monad）:
 
 ```scala
 import cats.MonadError
@@ -2530,7 +2530,7 @@ type ErrorOr[A] = Either[String, A]
 val monadError = MonadError[ErrorOr, String]
 ```
 
->*Applica􏰀veError*
+>*Applicati􏰀veError*
 >
 >实际上，MonadError继承了另一个type class：**Applica􏰀veError**，但我们之前并未遇到过Applica􏰀ve，所以这里就不展开讨论了，我们将会在第六章讲解这部分内容。
 
@@ -2605,7 +2605,67 @@ exn.raiseError[Try, Int]
 
 #### 4.6 The Eval Monad
 
+[cats.Eval](https://typelevel.org/cats/api/cats/Eval.html)是一个Monad，主要用于控制求值的抽象，我们常听到的求值模型有两种：eager（及早求值）和lazy（惰性求值），Eval除了支持上述两种求值模式，还支持是否需要对求值结果进行缓存，这种模型叫做：*memoized*。
 
+##### 4.6.1 Eager, Lazy, Memoized, Oh My!
+
+这些术语是什么含义呢？
+
+*Eager*在定义的时候就会去求值，而*Lazy*只有真正被访问的时候才会去求值，*Memoized*只在首次访问的时候会求值，后续会将结果缓存起来。
+
+举个例子，Scala的val就是eager和memoized的，我们来看一下下面这个例子，x在声明的时候就会去求值（eager）而不是访问的时候再去求值，另外访问x的值的时候，并不会重新运行代码，而是用之前缓存的值：
+
+```scala
+val x = {
+  println("Computing X")
+  math.random
+}
+// Computing X
+// x: Double = 0.013533499657218728
+
+x // first access
+// res0: Double = 0.013533499657218728
+
+x // second access
+// res1: Double = 0.013533499657218728
+```
+
+ 相比于val是eager和memoized，def则只是lazy的，它不会马上运行直到被访问才会真正去执行，另外它也不是memoized的，因为每次访问它都会重新执行：
+
+```scala
+def y = {
+  println("Computing Y")
+  math.random
+}
+// y: Double
+
+y // first access
+// Computing Y
+// res2: Double = 0.5548281126990907
+
+y // second access
+// Computing Y
+// res3: Double = 0.7681777032036599
+```
+
+那么有没有同时拥有lazy和memoized特性的呢？那就是：lazy val，它声明的变量只有首次访问的时候才会去执行，并且会缓存结果后续再访问的时候不会重新计算：
+
+```scala
+lazy val z = {
+  println("Computing Z")
+  math.random
+}
+// z: Double = <lazy>
+
+z // first access
+// Computing Z
+// res4: Double = 0.45707125364871903
+
+z // second access
+// res5: Double = 0.45707125364871903
+```
+
+##### 4.6.2 Eval’s Models of Evalua􏰀on
 
 
 
