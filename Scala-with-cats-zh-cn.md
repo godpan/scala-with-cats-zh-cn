@@ -2665,8 +2665,99 @@ z // second access
 // res5: Double = 0.45707125364871903
 ```
 
-##### 4.6.2 Eval’s Models of Evalua􏰀on
+##### 4.6.2 Eval’s Models of Evalua􏰀tion
 
+Eval有三个子类型：Now，Later和 Always，现在我们来分别用代码演示一下它们：
+
+```scala
+import cats.Eval
+
+val now = Eval.now(math.random + 1000)
+// now: cats.Eval[Double] = Now(1000.337992547842)
+
+val later = Eval.later(math.random + 2000)
+// later: cats.Eval[Double] = cats.Later@37f34fd2
+
+val always = Eval.always(math.random + 3000)
+// always: cats.Eval[Double] = cats.Always@486516b
+```
+
+可以通过代用Eval的value方法来获取它里面的值：
+
+```scala
+now.value
+// res6: Double = 1000.337992547842
+
+later.value
+// res7: Double = 2000.863079768816
+
+always.value
+// res8: Double = 3000.710688646907
+```
+
+Eval的每个类型多代表着一种求值模式，Eval.now代表着会马上进行求值，语义跟我们之前所讲的val类似，表现为eager和memoized：
+
+```scala
+val x = Eval.now {
+  println("Computing X")
+  math.random
+}
+// Computing X
+// x: cats.Eval[Double] = Now(0.5415551857150346)
+
+x.value // first access
+// res9: Double = 0.5415551857150346
+
+x.value // second access
+// res10: Double = 0.5415551857150346
+```
+
+Eval.always代表着惰性求值，跟def类似：
+
+```scala
+val y = Eval.always {
+  println("Computing Y")
+  math.random
+}
+// y: cats.Eval[Double] = cats.Always@3289cc05
+
+y.value // first access
+// Computing Y
+// res11: Double = 0.06355685569536818
+
+y.value // second access
+// Computing Y
+// res12: Double = 0.27425753581857903
+```
+
+Eval.later则代表着 lazy和memoized的模式，跟lazy val类似：
+
+```scala
+val z = Eval.later {
+  println("Computing Z")
+  math.random
+}
+// z: cats.Eval[Double] = cats.Later@7a533449
+
+z.value // first access
+// Computing Z
+// res13: Double = 0.3819703252438429
+
+z.value // second access
+// res14: Double = 0.3819703252438429
+```
+
+相关的比较和特性参考下表：
+
+|  Scala  | Cats | Proper􏰁ties |
+|  ----  | ----  | ----  |
+| val | Now |eager, memoized |
+| lazy val | Later |lazy, memoized |
+| def | Always |lazy, not memoized |
+
+##### 4.6.3 Eval as a Monad
+
+和其他Monad一样，Eval也有map和flatMap，可以用于连续计算，
 
 
 
