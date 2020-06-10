@@ -2760,14 +2760,109 @@ z.value // second access
 和其他Monad一样，Eval也有map和flatMap，可以用于连续计算。在下面这个例子中，被添加到计算链上的方法并不会马上去执行，直到调用Eval的value方法的时候才会真正去执行：
 
 ```scala
+val greeting = Eval.
+  always { println("Step 1"); "Hello" }.
+  map { str => println("Step 2"); s"$str world" }
+// greeting: cats.Eval[String] = cats.Eval$$anon$8@79ddd73b
 
+greeting.value
+// Step 1
+// Step 2
+// res15: String = Hello world
 ```
 
+需要注意的是，while the semantics of the originating Eval instances are maintained, mapping functions are always called lazily on demand (def semantics):
 
+```scala
+val ans = for {
+  a <- Eval.now { println("Calculating A"); 40 }
+  b <- Eval.always { println("Calculating B"); 2 }
+} yield {
+	println("Adding A and B") a+b
+}
+// Calculating A
+// ans: cats.Eval[Int] = cats.Eval$$anon$8@12da1eee
 
+ans.value // first access
+// Calculating B
+// Adding A and B
+// res16: Int = 42
 
+ans.value // second access
+// Calculating B
+// Adding A and B
+// res17: Int = 42
+```
 
+Eval除了有now和always方法以外，还有一个memoize方法，允许我们对计算结果进行缓存，后续调用将不再次计算：
 
+```scala
+val saying = Eval.
+  always { println("Step 1"); "The cat" }.
+  map { str => println("Step 2"); s"$str sat on" }.
+  memoize.
+  map { str => println("Step 3"); s"$str the mat" }
+// saying: cats.Eval[String] = cats.Eval$$anon$8@159a20cc
+
+saying.value // first access
+// Step 1
+// Step 2
+// Step 3
+// res18: String = The cat sat on the mat
+
+saying.value // second access
+// Step 3
+// res19: String = The cat sat on the mat
+```
+
+##### **4.6.4 Trampolining and** *Eval.defer*
+
+Eval一个很重要的特性就是它的mao和flatMap方法是 *trampolined*，这意味我们我们调用map和flatMap是不用占用栈空间的，这种模式我们称之为”stack safaty（栈安全）“。
+
+几个例子，我们来看一下factorials的计算：
+
+```scala
+ def factorial(n: BigInt): BigInt =
+  if(n == 1) n else n * factorial(n - 1)
+```
+
+这个方法非常容易导致栈溢出：
+
+```scala
+factorial(50000)
+// java.lang.StackOverflowError
+//   ...
+```
+
+我们可以通Eval实现一个栈安全的factorials计算：
+
+```scala
+def factorial(n: BigInt): Eval[BigInt] =
+  if(n == 1) {
+    Eval.now(n)
+  } else {
+    factorial(n - 1).map(_ * n)
+  }
+factorial(50000).value
+// java.lang.StackOverflowError
+//   ...
+```
+
+不可思议，竟然还发生了栈溢出！这其实是因为在调用Eval的map方法之前，还是进行了递归调用。我们可以通过
+
+Eval.defer来解决这个问题，defer可以对一个instance进行延迟求值，它跟map和flatMap方法一样，也是*trampolined*的，我们用它来保证栈安全：
+
+```scala
+  def factorial(n: BigInt): Eval[BigInt] =
+   if(n == 1) {
+     Eval.now(n)
+   } else {
+     Eval.defer(factorial(n - 1).map(_ * n))
+   }
+
+ factorial(50000).value
+// res20: BigInt = 334732050959714483691547609407148647791277322381045480773010032199016802214436564
+```
 
 
 
