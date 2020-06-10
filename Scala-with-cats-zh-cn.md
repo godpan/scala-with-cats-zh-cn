@@ -2757,7 +2757,13 @@ z.value // second access
 
 ##### 4.6.3 Eval as a Monad
 
-和其他Monad一样，Eval也有map和flatMap，可以用于连续计算，
+和其他Monad一样，Eval也有map和flatMap，可以用于连续计算。在下面这个例子中，被添加到计算链上的方法并不会马上去执行，直到调用Eval的value方法的时候才会真正去执行：
+
+```scala
+
+```
+
+
 
 
 
