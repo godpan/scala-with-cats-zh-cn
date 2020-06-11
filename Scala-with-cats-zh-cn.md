@@ -2864,7 +2864,26 @@ Eval.defer来解决这个问题，defer可以对一个instance进行延迟求值
 // res20: BigInt = 334732050959714483691547609407148647791277322381045480773010032199016802214436564
 ```
 
+Eval对于处理大量计算时能够保证栈安全，但是我们需要知道*trampolined*这种方式并不是没有代价的，它主要是通过在堆上创建对象而避免消耗栈，这也说明其实计算的递归深度还是有限制，只不过它是取决于堆的大小而不是栈的大小。
 
+##### 4.6.5 Exercise: Safer Folding using Eval
+
+标准库实现的foldRight不是栈安全的，利用Eval实现一个一个栈安全的版本：
+
+```scala
+def foldRight[A, B](as: List[A], acc: B)(fn: (A, B) => B): B = as match {
+    case head :: tail =>
+      fn(head, foldRight(tail, acc)(fn))
+    case Nil =>
+      acc
+}
+```
+
+详情见[示例]()
+
+#### 4.7 The Writer Monad
+
+[cats.data.Writer]()是一个主要用于在运行时记录日志的Monad，我们可以利用它来记录
 
 
 
