@@ -2883,19 +2883,210 @@ def foldRight[A, B](as: List[A], acc: B)(fn: (A, B) => B): B = as match {
 
 #### 4.7 The Writer Monad
 
-[cats.data.Writer]()是一个主要用于在运行时记录日志的Monad，我们可以利用它来记录
+[cats.data.Writer]()是一个主要用于在运行时记录日志的Monad，我们可以利用它来记录程序运行中的信息，错误以及自定义数据等，并且可以在结果中获取这些内容。
 
+Writer通常被用于在多线程中记录日志，那么相比常规记录日志的方式又有什么区别呢？最大的不同是常规记录日志的方式如果程序是通过并行执行的，那么日志会被分散在各个线程中，不利于阅读和分析，而Writer这种方式则将日志与结果绑定在一起，我们可以通过最终结果获取日志。
 
+>*Cats Data Types*
+>
+>Writer是我们在[cats.data](http://typelevel.org/cats/api/cats/data/)包看到的第一种type class，这个包提供了许多有用的type class，下一章节monad transformers中也会有关于该包中的内容，另外在第六章中我们将还会学习其中的一个type class：[Validated](https://typelevel.org/cats/api/cats/data/Validated.html)。
 
+##### 4.7.1 Creati􏰁ng and Unpacking Writers
 
+一个Writer[W, A]包含了两个值：一个是类型为W的log内容，另一个则是A类型的结果。我们可以通过以下方式来创建Writer：
 
+```scala
+import cats.data.Writer
+import cats.instances.vector._ // for Monoid
 
+Writer(Vector(
+  "It was the best of times",
+  "it was the worst of times"
+), 1859)
+// res0: cats.data.WriterT[cats.Id,scala.collection.immutable.Vector[ String],Int] = WriterT((Vector(It was the best of times, it was the worst of times),1859))
+```
 
+注意到控制台实际输出的类型是 WriterT[Id, Vector[String], Int]，而不是我们期望的WriterT[Vector[String], Int]，本着代码重用的原则，Cats通过WriterT来实现了Writer，WriterT的背后是一种新的概念：monad transformer，我们将会在下一章节中讲解这部分内容。
 
+现在我们不需要关心这部分细节，Writer可以看作是WriterT的一个类型别名：
 
+```scala
+type Writer[W, A] = WriterT[Id, W, A]
+```
 
+Cats提供了各种方式来方便的创建一个Writer，比如你只有结果值的话，你可以利用我们之前熟悉的pure方法来创建Writer，当然这时候log将为一个空值：
 
+```scala
+import cats.instances.vector._   // for Monoid
+import cats.syntax.applicative._ // for pure
 
+type Logged[A] = Writer[Vector[String], A]
+123.pure[Logged]
+// res2: Logged[Int] = WriterT((Vector(),123))
+```
+
+亦或者我们只有日志没有结果值的话，我们可以通[cats.syntax.writer](https://typelevel.org/cats/api/cats/syntax/package$$writer$)提供的tell方法来创建Writer：
+
+```scala
+import cats.syntax.writer._ // for tell
+
+Vector("msg1", "msg2", "msg3").tell
+// res3: cats.data.Writer[scala.collection.immutable.Vector[String],Unit] = WriterT((Vector(msg1, msg2, msg3),()))
+```
+
+假如我们现在两个值都有，我们则可以利用Writer.apply或者[cats.syntax.writer](https://typelevel.org/cats/api/cats/syntax/package$$writer$)提供的writer方法来创建Writer：
+
+```scala
+import cats.syntax.writer._ // for writer
+
+val a = Writer(Vector("msg1", "msg2", "msg3"), 123)
+// a: cats.data.WriterT[cats.Id,scala.collection.immutable.Vector[String],Int] = WriterT((Vector(msg1, msg2, msg3),123))
+
+val b = 123.writer(Vector("msg1", "msg2", "msg3"))
+// b: cats.data.Writer[scala.collection.immutable.Vector[String],Int] = WriterT((Vector(msg1, msg2, msg3),123))
+```
+
+我们可以通过value方法获取Writer中的结果，获取log则通过written方法：
+
+```scala
+val aResult: Int = a.value
+// aResult: Int = 123
+
+val aLog: Vector[String] = a.written
+// aLog: Vector[String] = Vector(msg1, msg2, msg3)
+```
+
+也可以利用run方法同时获取它们两个的值：
+
+```scala
+val (log, result) = b.run
+// log: scala.collection.immutable.Vector[String] = Vector(msg1, msg2,msg3)
+// result: Int = 123
+```
+
+##### 4.7.2 Composing and Transforming Writer
+
+当我们使用map或者flatMap的时候，Writer中的log会保留并传递到下一个Writer，所以我们序列计算中不断添加日志，鉴于这个原因，一个好的原则就是log的类型应该是支持高效率添加或者拼接的，比如Vector就很适合：
+
+```scala
+val writer1 = for {
+  a <- 10.pure[Logged]
+  _ <- Vector("a", "b", "c").tell
+  b <- 32.writer(Vector("x", "y", "z"))
+} yield a + b
+// writer1: cats.data.WriterT[cats.Id,Vector[String],Int] = WriterT((Vector(a, b, c, x, y, z),42))
+
+writer1.run
+// res4: cats.Id[(Vector[String], Int)] = (Vector(a, b, c, x, y, z) ,42)
+```
+
+除了可以用map和flatMap方法来转换结果以外，我们可以利用mapWritten方法来对Writer中log来进行转换：
+
+```scala
+val writer2 = writer1.mapWritten(_.map(_.toUpperCase))
+// writer2: cats.data.WriterT[cats.Id,scala.collection.immutable. Vector[String],Int] = WriterT((Vector(A, B, C, X, Y, Z),42))
+
+writer2.run
+// res5: cats.Id[(scala.collection.immutable.Vector[String], Int)] = ( Vector(A, B, C, X, Y, Z),42)
+```
+
+我们也可以利用bimap或者mapBoth方法来同时对Writer中的log和result来进行转换，其中bimap接收两个单参数方法参数，分别是log => log，result => result，而mapBoth则是接收一个方法但是包含两个参数：
+
+```scala
+val writer3 = writer1.bimap(
+  log => log.map(_.toUpperCase),
+  res => res * 100
+)
+// writer3: cats.data.WriterT[cats.Id,scala.collection.immutable. Vector[String],Int] = WriterT((Vector(A, B, C, X, Y, Z),4200))
+
+writer3.run
+// res6: cats.Id[(scala.collection.immutable.Vector[String], Int)] = ( Vector(A, B, C, X, Y, Z),4200)
+
+val writer4 = writer1.mapBoth { (log, res) =>
+  val log2 = log.map(_ + "!")
+  val res2 = res * 1000
+  (log2, res2)
+}
+// writer4: cats.data.WriterT[cats.Id,scala.collection.immutable. Vector[String],Int] = WriterT((Vector(a!, b!, c!, x!, y!, z!) ,42000))
+
+writer4.run
+// res7: cats.Id[(scala.collection.immutable.Vector[String], Int)] = ( Vector(a!, b!, c!, x!, y!, z!),42000)
+```
+
+我们可以通过reset方法来清空日志，swap方法来交换log和result：
+
+```scala
+val writer5 = writer1.reset
+// writer5: cats.data.WriterT[cats.Id,Vector[String],Int] = WriterT((Vector(),42))
+
+writer5.run
+// res8: cats.Id[(Vector[String], Int)] = (Vector(),42)
+
+val writer6 = writer1.swap
+// writer6: cats.data.WriterT[cats.Id,Int,Vector[String]] = WriterT((42,Vector(a, b, c, x, y, z)))
+
+writer6.run
+// res9: cats.Id[(Int, Vector[String])] = (42,Vector(a, b, c, x, y, z) )
+```
+
+##### 4.7.3 Exercise: Show Your Working
+
+Writer对于多线程环境下的记录日志非常有用，接下去让我们用factorial计算来证明这一点。
+
+我们在factorial计算的每一步都添加了日志打印的操作，并使用slowly方法来模拟计算所需的的时间，来看一下这段代码：
+
+```scala
+def slowly[A](body: => A) =
+  try body finally Thread.sleep(100)
+
+def factorial(n: Int): Int = {
+	val ans = slowly(if(n == 0) 1 else n * factorial(n - 1)) println(s"fact $n $ans")
+	ans
+}
+```
+
+运行以上程序，将会输出一系列递增的值：
+
+```scala
+factorial(5)
+
+// fact 0 1
+// fact 1 1
+// fact 2 2
+// fact 3 6
+// fact 4 24
+// fact 5 120
+// res11: Int = 120
+```
+
+如果我们同时并行执行多个factorial计算，那么日志输出就有可能交错，这让我们很难区分哪些日志是哪个计算产生的：
+
+```scala
+import scala.concurrent._
+import scala.concurrent.ExecutionContext.Implicits.global 
+import scala.concurrent.duration._
+
+Await.result(Future.sequence(Vector(
+  Future(factorial(3)),
+  Future(factorial(3))
+)), 5.seconds)
+
+// fact 0 1
+// fact 0 1
+// fact 1 1
+// fact 1 1
+// fact 2 2
+// fact 2 2
+// fact 3 6
+// fact 3 6
+// res14: scala.collection.immutable.Vector[Int] = // Vector(120, 120)
+```
+
+利用Writer重新实现factorial计算并记录日志，保证在并行执行多个计算的时候能正确分离日志。
+
+详情见[示例]()
+
+#### 4.8 The Reader Monad
 
 
 
