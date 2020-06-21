@@ -135,13 +135,13 @@ Type class 是一种编程范式源自于 Haskell，它允许我们不通过传�
 
 Type class模式主要由3个模块组成：
 
-- Type class self
+- Type class 本身
 - Type class Instances
 - Type class interface
 
-#### 1.1.1 The Type Class
+#### 1.1.1 Type Class
 
-Type class 可以看成一个接口或者 API，用于定义我们想要实现功能。在 Cats 中，Type class相当于至少带有一个类型参数的 trait。举个例子，我们可以通过以下的代码描述一个基本的功能：“序列化成 JSON”。
+Type class 可以看成一个接口或者 API，用于定义我们想要实现功能。在 Cats 中，Type class相当于至少带有一个类型参数的 trait。比如以下定义代表将一个值转换为Json的行为：
 
 ```scala
 // Define a very simple JSON AST 声明一些简单的JSON AST
@@ -157,13 +157,13 @@ trait JsonWriter[A] {
 }
 ```
 
- 这个例子中 `JsonWriter` 就是我们定义的一个 type class，上述代码中还包含Json类型相关的代码。
+ 这个例子中 `JsonWriter` 就是我们定义的一个 Type class，上述代码中还包含Json类型相关的代码。
 
 #### 1.1.2 Type Class Instances
 
-Type Class 实例就是对特定类型的 Type Class 的实现，包括Scala的基本类型以及我们自己定义的类型。
+Type Class instance 就是特定类型的 Type Class实现，包括Scala的基本类型以及我们自己定义的类型。
 
-在Scala中，我们通过创建一个 Type Class 的实现来进行 Type Class 实例的声明，并用 **implicit** 这个关键词进行标记：
+在Scala中，Type Class  instance可以通过实现对应类型Type Class来声明，并用 **implicit** 这个关键词进行标记：
 
 ```scala
 final case class Person(name: String, email: String)
@@ -194,7 +194,7 @@ Type Class  Interface 包含对我们想要对外部暴露的功能。interfaces
 - Interface Objects
 - Interface Syntax
 
-##### Interface Objects
+##### Interface Objects用法
 
 创建 interface 最简单的方式就是将方法放在一个单例object中：
 
@@ -219,7 +219,7 @@ Json.toJson(Person("Dave", "dave@example.com"))
 Json.toJson(Person("Dave", "dave@example.com"))(personWriter)
 ```
 
-##### Interface Syntax
+##### Interface Syntax用法
 
 我们也可以使用扩展方法使已存在的类型拥有 interface methods，在 Cats 中将此称为 “*syntax*”：
 
@@ -247,7 +247,7 @@ Person("Dave", "dave@example.com").toJson
 Person("Dave", "dave@example.com").toJson(personWriter)
 ```
 
-##### The implicitly Method
+##### 使用implicitly
 
 Scala 标准库提供了一个泛型的 type class interface 叫做 implicitly，它的声明非常简单：
 
@@ -314,7 +314,7 @@ Json.toJson("A string")
 
 如果是第一种方式的，我们在使用之前通过import导入，第二种方式的话通过继承trait引入，另外两种方式的，无需单独导入，它们默认就在对应类型的implicit scope中。
 
-#### 1.2.3 Recursive Implicit Resolu􏰀on
+#### 1.2.3 递归寻找Implicit
 
 编译器除了能直接寻找对应类型type class instance，还拥有组合type class instance的能力。
 
@@ -395,7 +395,7 @@ Json.toJson(Option("A string"))(optionWriter(stringWriter))
 >
 > 
 
-### 1.3 Exercise: Printable Library
+### 1.3 练习: 实现一个Printable
 
 Scala可以通过toString方法将一个任意一个值转换成String。但是这种方式有一些缺陷：
 
@@ -412,7 +412,7 @@ Scala可以通过toString方法将一个任意一个值转换成String。但是�
 
 代码见[示例]()
 
-#### 1.3.1 Using the Library
+#### 1.3.1 使用Printable
 
 我们可以把Printable这个功能封装成类库，然后在使用的地方引入，我们先来定义一个case class：
 
@@ -426,9 +426,9 @@ final case class Cat(name: String, age: Int, color: String)
 NAME is a AGE year-old COLOR cat.
 ```
 
- 最后我们对功能进行了实现（代码见[示例]()）
+ 代码见[示例]()
 
-#### 1.3.2 Bett􏰁er Syntax
+#### 1.3.2 更好的 Syntax语法
 
 我们将使用前面介绍的**Interface Syntax**的语法，让Printable相关的功能更容易使用：
 
@@ -441,7 +441,7 @@ NAME is a AGE year-old COLOR cat.
 
 （代码见[示例]()）
 
-### 1.4 Meet Cats
+### 1.4 初遇 Cats
 
 在先前的章节我们学习了如何在Scala中去实现一个type class，在本节中我们学习Cats中实现的type class。
 
@@ -456,7 +456,7 @@ trait Show[A] {
 }
 ```
 
-#### 1.4.1 Impor􏰀ng Type Classes
+#### 1.4.1 导入Type Class
 
 Show这个type class声明在[cats](http://typelevel.org/cats/api/cats/)这个包里，我们可以直接进行import：
 
@@ -475,7 +475,7 @@ val showInt = Show.apply[Int]
 
 糟糕，竟然报错了，因为apply方法是通过implicit来查找对应的instance，所以我们需要导入相应的instance到implicit scope。
 
-#### 1.4.2 Impor􏰀ng Default Instances
+#### 1.4.2 导入默认的Instances实现
 
  [cats.instances](https://typelevel.org/cats/api/cats/instances/)这个包提供了很多默认实现的instances，我们可以通过一下方式来引入它们，每种类型的包都包含了该类型对于Cats中所有type class的instance实现：
 
@@ -507,7 +507,7 @@ val stringAsString: String = showString.show("abc")
 // stringAsString: String = abc
 ```
 
-#### 1.4.3 Impori􏰀ng Interface Syntax
+#### 1.4.3 导入Interface Syntax
 
 我们可以使用*interface syntax*让Show变的更容易使用，首先我们需要先导入[cats.syntax.show](https://typelevel.org/cats/api/cats/syntax/package$$show$)，它会为任意类型添加一个show的扩展方法，前提是implicit scope已经有了对应类型的instance：
 
@@ -523,7 +523,7 @@ val shownString = "abc".show
 
 Cats为每一个type class都提供了syntax，我们可以按需使用，在后面的章节，我们会继续它们。
 
-#### 1.4.4 Impori􏰀ng All The Things!
+#### 1.4.4 导入所有内容
 
 在这本书中，我们对于每个示例都是按需导入，只导入需要的instance和syntax。然而，有些时候这也是相当费时的，你可以通过以下方式简化导入：
 
@@ -541,7 +541,7 @@ import cats.implicits._
 
 但当遇到命名冲突或者implicit冲突的时候，我们就需要更具体导入。
 
-#### 1.4.5 Defining Custom Instances
+#### 1.4.5 声明一个自定义的Instances
 
 下面我们来自定义一个关于Show的instance：
 
@@ -576,11 +576,11 @@ implicit val dateShow: Show[Date] = Show.show(date => s"${date.getTime}ms since 
 
 我们可以看到，确实简洁了不少，Cats为很多type class都提供了类似的辅助方法来创建instance，可以从头直接创建instance，也可以基于其他类型的instance创建新的instance，比如：基于Int类型的instance创建Option[Int]类型的instance。
 
-#### 1.4.6 Exercise: Cat Show
+#### 1.4.6 练习: 使用Cat Show
 
 使用Show type class重写上面章节Printable的例子，代码见[示例]()
 
-### 1.5 Example: Eq
+### 1.5 Eq：一个用于比较类型安全的Type class
 
 本章节我们继续来学习一个非常实用的type class：[cats.Eq](https://typelevel.org/cats/api/cats/kernel/Eq.html)。Eq主要是为了类型安全的判等设计的，因为Scala内置的 ==操作符有时会给我们带来困扰。
 
@@ -595,7 +595,7 @@ List(1, 2, 3).map(Option(_)).filter(item => item == 1)
 
 这是开发者的错，我们应该用Some(1)去比较而不是1。然而这在技术上来说并不能说它是错的，因为==可以作用于任意的两个对象，不用关心具体的类型。Eq的设计，解决了这个问题，因为它是类型安全的。
 
-#### 1.5.1 Equality, Liberty, and Fraternity
+#### 1.5.1 Equality, Liberty and Fraternity
 
 我们可以使用Eq对任意给定类型的对象进行类型安全的判等：
 
@@ -613,7 +613,7 @@ trait Eq[A] {
 - === 比较两个对象相等
 - =!= 比较两个对象不相等
 
-#### **1.5.2 Comparing Ints**
+#### 1.5.2 比较Int类型
 
 让我们来看些例子，首先我们需要先导入对应的type class:
 
@@ -672,7 +672,7 @@ import cats.syntax.eq._ // for === and =!=
 //         
 ```
 
-#### **1.5.3 Comparing Op􏰀ons**
+#### 1.5.3 比较Option类型
 
 接下来我们来看一个更有趣的例子—Option[Int]。如果要比较Option[Int]类型的值，我们需要先导入Option以及Int对应的instances：
 
@@ -714,7 +714,7 @@ import cats.syntax.option._ // for some and none
 // res12: Boolean = true
 ```
 
-#### **1.5.4 Comparing Custom Types**
+#### 1.5.4 比较自定义类型
 
 我们可以为自定义的类型创建一个关于Eq的instance，它接收一个(A, A) => Boolean 的方法返回一个Eq[A]：
 
@@ -735,7 +735,7 @@ x === y
 // res14: Boolean = false
 ```
 
-#### **1.5.5 Exercise: Equality, Liberty, and Felinity**
+#### 1.5.5 练习: 实现Cat类型的判等
 
 实现一个Cat类型关于Eq的instance：
 
@@ -3087,6 +3087,40 @@ Await.result(Future.sequence(Vector(
 详情见[示例]()
 
 #### 4.8 The Reader Monad
+
+Reader这部分内容没理解其背后的深意，暂不翻译
+
+#### 4.9 The State Monad
+
+State未使用过，暂不翻译
+
+#### 4.10 Defining Custom Monads
+
+我们可以为自定义类型声明一个Monad，声明一个Monad需要实现3个方法：flatMap，pure和tailRecM，前两个方法我们已经很熟悉，另外一个方法却没听过，我们来看一个Option类型的Monad实现：
+
+```scala
+import cats.Monad
+import scala.annotation.tailrec
+val optionMonad = new Monad[Option] {
+  def flatMap[A, B](opt: Option[A])
+      (fn: A => Option[B]): Option[B] =
+    opt flatMap fn
+  
+  def pure[A](opt: A): Option[A] =
+    Some(opt)
+  
+  @tailrec
+  def tailRecM[A, B](a: A)
+      (fn: A => Option[Either[A, B]]): Option[B] =
+    fn(a) match {
+      case None           => None
+      case Some(Left(a1)) => tailRecM(a1)(fn)
+      case Some(Right(b)) => Some(b)
+		} 
+}
+```
+
+
 
 
 
