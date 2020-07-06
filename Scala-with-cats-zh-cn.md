@@ -580,7 +580,7 @@ implicit val dateShow: Show[Date] = Show.show(date => s"${date.getTime}ms since 
 
 使用Show type class重写上面章节Printable的例子，代码见[示例]()
 
-### 1.5 Eq：一个用于比较类型安全的Type class
+### 1.5 Eq：一个类型安全的判等Type class
 
 本章节我们继续来学习一个非常实用的type class：[cats.Eq](https://typelevel.org/cats/api/cats/kernel/Eq.html)。Eq主要是为了类型安全的判等设计的，因为Scala内置的 ==操作符有时会给我们带来困扰。
 
@@ -608,14 +608,14 @@ trait Eq[A] {
 }
 ```
 
-与Show类似，关于Eq的interface syntax，声明在[cats.syntax.eq](https://typelevel.org/cats/api/cats/syntax/package$$eq$)这个包中，它提供了两个执行判等的方法，你可以直接使用，当然前提是在implicit scope中有对于的instance：
+与Show类似，Eq对应的interface syntax，声明在[cats.syntax.eq](https://typelevel.org/cats/api/cats/syntax/package$$eq$)这个包中，它提供了两个执行判等的方法，你可以直接使用，当然前提是在implicit scope中导入了对应的instance：
 
 - === 比较两个对象相等
 - =!= 比较两个对象不相等
 
 #### 1.5.2 比较Int类型
 
-让我们来看些例子，首先我们需要先导入对应的type class:
+让我们来看些例子，首先我们需要先导入Eq的type class:
 
 ```scala
 import cats.Eq
@@ -649,7 +649,7 @@ eqInt.eqv(123, "234")
 // ^
 ```
 
-我们同样可以使用interface syntax语法，需要先导入[cats.syntax.eq](https://typelevel.org/cats/api/cats/syntax/package$$eq$)，然后我们就可以直接使用 === 和 =!=方法：
+我们同样可以使用interface syntax语法，但需要先导入[cats.syntax.eq](https://typelevel.org/cats/api/cats/syntax/package$$eq$)，然后我们就可以直接使用 === 和 =!=方法：
 
 ```scala
 import cats.syntax.eq._ // for === and =!=
@@ -689,7 +689,7 @@ Some(1) === None
 // 
 ```
 
-编译发现了一个错误，因为类型没匹配上，我们导入的是Int以及Option[Int]对应Eq的instances，所以Some[Int]是无法比较的。要解决这个问题我们需要将参数的类型指定为Option[Int]：
+编译发现了一个错误，原因是类型没匹配上，我们导入的是Int以及Option[Int]对应Eq的instances，所以Some[Int]是无法比较的，要解决这个问题我们需要将值的类型指定为Option[Int]：
 
 ```scala
  (Some(1) : Option[Int]) === (None : Option[Int])
@@ -703,7 +703,7 @@ Some(1) === None
 // res10: Boolean = false
 ```
 
-或者使用[cats.syntax.option](https://typelevel.org/cats/api/cats/syntax/package$$option$)中特殊的语法：
+或者使用[cats.syntax.option](https://typelevel.org/cats/api/cats/syntax/package$$option$)中特殊语法：
 
 ```scala
 import cats.syntax.option._ // for some and none
