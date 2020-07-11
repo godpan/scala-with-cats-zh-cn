@@ -443,11 +443,11 @@ NAME is a AGE year-old COLOR cat.
 
 ### 1.4 初遇 Cats
 
-在先前的章节我们学习了如何在Scala中去实现一个type class，在本节中我们学习Cats中实现的type class。
+在先前的章节我们学习了如何在Scala中去实现一个type class，在本节中我们学习Cats中已经实现的type class。
 
-Cats是的设计是模块化，你可以自由选择自己想要的type class、instance、interface methods。让我们来看第一个例子：[cats.Show](http://typelevel.org/cats/api/cats/Show.html)。
+Cats是的设计是模块化，我们可以自由选择自己想要的type class、instance、interface methods。让我们来看第一个例子：[cats.Show](http://typelevel.org/cats/api/cats/Show.html)。
 
-Show的功能跟我们在上节实现的Printable基本一致。它的主要功能就是帮助我们将数据以更友好的方式输出的控制台，而不是通过toString方法，下面是它的一个简要声明：
+Show的功能跟我们在上节实现的Printable基本一致。它的主要功能就是帮助我们将数据以更友好的方式输出的控制台，而不是通过toString方法，下面是它的一个简单声明：
 
 ```scala
 package cats
@@ -464,7 +464,7 @@ Show这个type class声明在[cats](http://typelevel.org/cats/api/cats/)这个�
 import cats.Show
 ```
 
-在Cats中，每个type class的伴生对象中都有一个apply方法，用于查找我们指定类型对应的instance：
+在Cats中，每个type class的伴生对象中都有一个apply方法，用于查找对应类型的instance：
 
 ```scala
 val showInt = Show.apply[Int]
@@ -477,7 +477,7 @@ val showInt = Show.apply[Int]
 
 #### 1.4.2 导入默认的Instances实现
 
- [cats.instances](https://typelevel.org/cats/api/cats/instances/)这个包提供了很多默认实现的instances，我们可以通过一下方式来引入它们，每种类型的包都包含了该类型对于Cats中所有type class的instance实现：
+ [cats.instances](https://typelevel.org/cats/api/cats/instances/)这个包提供了很多默认实现的instance，我们可以通过以下方式来导入它们，每种类型的包都包含了该类型对于Cats中所有type class的instance实现：
 
 - [cats.instances.int](https://typelevel.org/cats/api/cats/instances/package$$int$)提供所有Int的instances
 - [cats.instances.string](https://typelevel.org/cats/api/cats/instances/package$$string$)提供所有Stirng的instances
@@ -487,7 +487,7 @@ val showInt = Show.apply[Int]
 
 有关可用导入的详细信息，请参见[cats.instances](https://typelevel.org/cats/api/cats/instances/)包。
 
-让我们来引入Int和String对应Show的instances：
+让我们来导入Int和String对应Show的instances：
 
 ```scala
 import cats.instances.int._    // for Show
@@ -497,7 +497,7 @@ val showInt: Show[Int] = Show.apply[Int]
 val showString: Show[String] = Show.apply[String]
 ```
 
-很好，我们引入了Int和String对应Show的instances，现在可以使用它们来打印Int和String的数据：
+很好，我们导入了Int和String对应Show的instance，现在可以使用它们来打印Int和String的数据：
 
 ```scala
 val intAsString: String = showInt.show(123)
@@ -521,7 +521,7 @@ val shownString = "abc".show
 // shownString: String = abc
 ```
 
-Cats为每一个type class都提供了syntax，我们可以按需使用，在后面的章节，我们会继续它们。
+Cats为每一个type class都提供了syntax，我们可以按需使用，在后面的章节，我们会继续介绍它们。
 
 #### 1.4.4 导入所有内容
 
@@ -541,9 +541,9 @@ import cats.implicits._
 
 但当遇到命名冲突或者implicit冲突的时候，我们就需要更具体导入。
 
-#### 1.4.5 声明一个自定义的Instances
+#### 1.4.5 实现一个自定义的Instance
 
-下面我们来自定义一个关于Show的instance：
+下面我们来实现Date类型对应Show的instance：
 
 ```scala
 import java.util.Date
@@ -555,7 +555,7 @@ implicit val dateShow: Show[Date] =
 }
 ```
 
-但是，Cats提供了一些更简洁的方法去声明instance。对于Show来说，在其伴生对象中有两个方法帮助我们创建自定义类型的instance：
+同时，Cats提供了一些更简洁的方法去创建instance。对于Show来说，在其伴生对象中有两个方法帮助我们创建自定义类型的instance：
 
 ```scala
 object Show {
@@ -580,7 +580,7 @@ implicit val dateShow: Show[Date] = Show.show(date => s"${date.getTime}ms since 
 
 使用Show type class重写上面章节Printable的例子，代码见[示例]()
 
-### 1.5 Eq：一个用于比较类型安全的Type class
+### 1.5 Eq：一个用于判等且类型安全的Type class
 
 本章节我们继续来学习一个非常实用的type class：[cats.Eq](https://typelevel.org/cats/api/cats/kernel/Eq.html)。Eq主要是为了类型安全的判等设计的，因为Scala内置的 ==操作符有时会给我们带来困扰。
 
@@ -591,7 +591,7 @@ List(1, 2, 3).map(Option(_)).filter(item => item == 1)
 // res0: List[Option[Int]] = List()
 ```
 
-可能很多人都不会犯这么简单的错误，但是这是可能存在的，filter里面的判断逻辑会一直返回false，因为Int和Option[Int]是不可能相等的。
+虽然很多人都不会犯这么简单的错误，但是这是可能存在的，filter里面的判断逻辑会一直返回false，因为Int和Option[Int]是不可能相等的。
 
 这是开发者的错，我们应该用Some(1)去比较而不是1。然而这在技术上来说并不能说它是错的，因为==可以作用于任意的两个对象，不用关心具体的类型。Eq的设计，解决了这个问题，因为它是类型安全的。
 
