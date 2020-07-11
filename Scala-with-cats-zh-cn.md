@@ -580,7 +580,7 @@ implicit val dateShow: Show[Date] = Show.show(date => s"${date.getTime}ms since 
 
 使用Show type class重写上面章节Printable的例子，代码见[示例]()
 
-### 1.5 Eq：一个用于判等且类型安全的Type class
+### 1.5 Eq：一个类型安全的判等Type class
 
 本章节我们继续来学习一个非常实用的type class：[cats.Eq](https://typelevel.org/cats/api/cats/kernel/Eq.html)。Eq主要是为了类型安全的判等设计的，因为Scala内置的 ==操作符有时会给我们带来困扰。
 
@@ -608,14 +608,14 @@ trait Eq[A] {
 }
 ```
 
-与Show类似，关于Eq的interface syntax，声明在[cats.syntax.eq](https://typelevel.org/cats/api/cats/syntax/package$$eq$)这个包中，它提供了两个执行判等的方法，你可以直接使用，当然前提是在implicit scope中有对于的instance：
+与Show类似，Eq对应的interface syntax，声明在[cats.syntax.eq](https://typelevel.org/cats/api/cats/syntax/package$$eq$)这个包中，它提供了两个执行判等的方法，你可以直接使用，当然前提是在implicit scope中导入了对应的instance：
 
 - === 比较两个对象相等
 - =!= 比较两个对象不相等
 
 #### 1.5.2 比较Int类型
 
-让我们来看些例子，首先我们需要先导入对应的type class:
+让我们来看些例子，首先我们需要先导入Eq的type class:
 
 ```scala
 import cats.Eq
@@ -649,7 +649,7 @@ eqInt.eqv(123, "234")
 // ^
 ```
 
-我们同样可以使用interface syntax语法，需要先导入[cats.syntax.eq](https://typelevel.org/cats/api/cats/syntax/package$$eq$)，然后我们就可以直接使用 === 和 =!=方法：
+我们同样可以使用interface syntax语法，但需要先导入[cats.syntax.eq](https://typelevel.org/cats/api/cats/syntax/package$$eq$)，然后我们就可以直接使用 === 和 =!=方法：
 
 ```scala
 import cats.syntax.eq._ // for === and =!=
@@ -689,7 +689,7 @@ Some(1) === None
 // 
 ```
 
-编译发现了一个错误，因为类型没匹配上，我们导入的是Int以及Option[Int]对应Eq的instances，所以Some[Int]是无法比较的。要解决这个问题我们需要将参数的类型指定为Option[Int]：
+编译发现了一个错误，原因是类型没匹配上，我们导入的是Int以及Option[Int]对应Eq的instances，所以Some[Int]是无法比较的，要解决这个问题我们需要将值的类型指定为Option[Int]：
 
 ```scala
  (Some(1) : Option[Int]) === (None : Option[Int])
@@ -703,7 +703,7 @@ Some(1) === None
 // res10: Boolean = false
 ```
 
-或者使用[cats.syntax.option](https://typelevel.org/cats/api/cats/syntax/package$$option$)中特殊的语法：
+或者使用[cats.syntax.option](https://typelevel.org/cats/api/cats/syntax/package$$option$)中特殊语法：
 
 ```scala
 import cats.syntax.option._ // for some and none
@@ -755,7 +755,7 @@ val optionCat2 = Option.empty[Cat]
 
  代码见[示例]()
 
-### 1.6 Controlling Instance Selec􏰀on
+### 1.6 Instance的选择原则
 
  在使用type class的时候，我们必须考虑以下两个问题，因为它们对于如何选择instance至关重要：
 
@@ -763,21 +763,22 @@ val optionCat2 = Option.empty[Cat]
 
   举个例子，假如我们声明了一个JsonWriter[Option[Int]]的instance，那么Json.toJson(Some(1))能使用这个instance吗？（Some是Option的子类型）
 
-- xxxx
+- 同一个类型有多个type class instance的时候该如何选择？
+  举个例子，比如我们声明了两个JsonWriter对应Person类型的instance，当我们在使用Json.toJson(aPerson)，该如何选择instance？
 
-#### **1.6.1 Variance**
+#### **1.6.1 变型**
 
 当我们在声明type class时，可以使用可变的类型参数，这样可以让type class也有“变型”的能力。
 
 在Essential scala中提到，variance跟子类型有关，假如可以在任意接收A类型值的地方用B类型值代替，那么可以说B是A的子类型。
 
-当我们在定义类型构造器的时候，可以使用annotations来标明它是否是支持协变或者逆变的。举个例子，我么可以使用**”+“**符号表示它是协变的：
+当我们在定义类型构造器的时候，可以使用annotations来标明它是否是支持协变或者逆变的。我们可以使用**”+“**符号表示它是协变的：
 
 ```scala
 trait F[+A] // the "+" means "covariant"
 ```
 
-##### Convariance
+##### 协变
 
 convariance代表着假如B是A的子类型，那么F[B]也是F[A]的子类型。这对很多类型的建模都很有用，比如List和Option：
 
@@ -796,15 +797,15 @@ val circles: List[Circle] = ???
 val shapes: List[Shape] = circles
 ```
 
-那么什么是逆变呢？我们可以使用**”-“符号表示它是逆变的：
+那么什么是逆变呢？我们可以使用**”-“**符号表示它是逆变的：
 
 ```scala
 trait F[-A]
 ```
 
-##### Contravariance
+##### 逆变
 
-不同的是，contravariance代表着假如B是A的子类型，那么F[A]也是F[B]的子类型。逆变在对”**processes（处理）**“建模的时候非常有用，比如我们定义一个JsonWriter：
+不同的是，contravariance代表着假如B是A的子类型，那么F[A]是F[B]的子类型。逆变在对”**processes（处理）**“建模的时候非常有用，比如我们定义一个JsonWriter：
 
 ```scala
 trait JsonWriter[-A] {
@@ -825,11 +826,11 @@ val circleWriter: JsonWriter[Circle] = ???
 def format[A](value: A, writer: JsonWriter[A]): Json = writer.write(value)
 ```
 
-现在你可以问自己一个问题：”format方法支持哪些参数组合呢？“。假如value为circle，那么writer可以为任一一个，因为所有Circle都是Shape。但反过来，shape不能与circleWriter组合，因为不是所有的Shape都是Circle。
+现在你可以思考一下：”format方法支持哪些参数组合呢？“。假如value为circle，那么writer可以为任一一个，因为所有Circle都是Shape。但反过来，shape不能与circleWriter组合，因为不是所有的Shape都是Circle。
 
 这种情况下，我们就会使用逆变参数来进行建模。JsonWriter[Shape]是JsonWriter[Circle]子类型，因为Circle是Shape的子类型，这意味着任何接收JsonWriter[Circle]类型值的地方，都可以用shapeWriter代替。
 
-##### **Invariance**
+##### 不变型
 
 不变相对来说更容易理解，在类型构造的时候不需要指定”**+**“或者”**-**“的符号：
 
