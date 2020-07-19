@@ -868,24 +868,24 @@ final case object C extends A
 
 在本章中，我们首先学习了什么是type class，然后实现了一个我们自己定义的type class：Printable，紧接着我们学习了Cats中的两个type class：Show和Eq。
 
-现在，我们来看Cats的基本结构：
+现在，我们来看Cats的基本组成结构：
 
 - type class都声明在[cats](http://typelevel.org/cats/api/cats/)这个包中。
-- 每一个type class都有一个伴生对象，里面包含着一个apply方法，用于指定对应的instance，以及一个或者多个用于创建instance的构造方法，以及其他一系列相关的辅助方法。
-- 默认的instance都放在[cats.instance](http://typelevel.org/cats/api/cats/instances/)这个包中，组织结构是以类型参数而不是type class，举个例子所有Int类型的instance会放在一起，而不是关于Show对应所有类型的instance放在一起。
-- 很多type class都提供interface syntax，放置在[cats.syntax](http://typelevel.org/cats/api/cats/syntax/)中。
+- 每一个type class都有一个伴生对象，里面包含着一个apply方法，用于指定对应类型的instance，以及一个或者多个用于创建instance的构造方法，另外还有其他一系列相关的辅助方法。
+- 默认的instance都放在[cats.instance](http://typelevel.org/cats/api/cats/instances/)这个包中，相同类型的所有instance会放在一起。
+- 很多type class都提供interface syntax，放置在[cats.syntax](http://typelevel.org/cats/api/cats/syntax/)这个包中。
 
-在接下去的章节中，我们将会学习一些应用广泛且强大的type class，比如Semigroup, Monoid, Functor, Monad, Semigroupal, Applicative, Traverse等，在每一个示例下，我们都会介绍这个type class所拥有的能力，遵循的法则，以及在Cats中是如何实现的。这些Type class相对Show以及Eq来说，要更抽象许多，虽然这会让我们更难学习，但在实际上它们却更有用。
+在接下去的章节中，我们将会学习一些应用广泛且强大的type class，比如Semigroup, Monoid, Functor, Monad, Semigroupal, Applicative, Traverse等，我们会介绍每个type class所拥有的能力，遵循的法则，以及它在Cats中是如何实现的。这些type class相对Show以及Eq来说，要更抽象许多，虽然这会让我们更难学习，但实际上它们却更有用。
 
 
 
 ### Chapter 2
 
-###  **Monoids and Semigroups**
+###  Monoids and Semigroups
 
-在本章中，我们将探索两个type class：**monoid**和**semigroup**。他们的主要功能是对值进行相加或者组合，并且很多类型都有对应这个两个type class的instance，比如Int，String，List，Option等，接下来让我们先了解一些简单的类型和操作，尝试理解其背后原理。
+在本章中，我们将学习两个type class：**monoid**和**semigroup**。他们的主要功能是对值进行相加或者组合，并且很多基础类型都有对应这两个type class的实现，比如Int，String，List，Option等，接下来让我们先了解一些简单的类型和操作，尝试理解其背后原理。
 
-##### **Integer additi􏰀on**
+##### Int类型的加法
 
 Int的加法是满足**封闭性**的，也就是说两个Int相加会生一个新的Int：
 
@@ -912,7 +912,7 @@ Int的加法是满足**封闭性**的，也就是说两个Int相加会生一个�
 // res4: Int = 6
 ```
 
-**Integer mul􏰀plica􏰀tion**
+**Int类型的乘法**
 
 Int的乘法同样满足上面我们描述加法的三个特性，只不过它的幺元由0变为了1：
 
@@ -933,7 +933,7 @@ Int的乘法同样满足上面我们描述加法的三个特性，只不过它�
 // res8: Int = 6
 ```
 
-##### String and sequence concatena􏰁tion
+##### 字符串与序列的拼接
 
 String类型同样也可以相加，可以使用字符串拼接作为一个操作符：
 
@@ -964,9 +964,9 @@ String类型同样也可以相加，可以使用字符串拼接作为一个操�
 
 注意，这里我们是使用++来进行序列拼接，而不是+，除了字符串（可以看出Char类型的sequence）以外，我们还可以去其他类型的sequence执行相同的操作，拼接作为操作符，空sequence为单位元。
 
-#### 2.1 Defini􏰁tion of a Monoid
+#### 2.1 声明一个 Monoid
 
-现在我们已经看过好几个“additi􏰁on”的例子，它们都有一个添加的操作符和一个单位元，其实这就是Monoid，对于类型A来说：
+现在我们已经看过好几个**“相加”**的例子，它们都有一个添加的操作符和一个单位元，其实这就是Monoid，对于类型A来说：
 
 - 有一个操作满足(A,A)=>A
 - A类型有一个empty的值
@@ -1006,7 +1006,7 @@ def identityLaw[A](x: A)
 // res16: Int = 2
 ```
 
-在自己去实现一个Monoid instance的时候，一定要遵循对应的法则，非法的instance非常危险，因为可能出现不可预测的结果。大多数时候我们只需要使用Cats中已经声明instance，当然你最好去看一下它们的源码，了解一下它们背后的实现。
+如果自己去实现一个Monoid instance的话，一定要遵循对应的法则，非法的instance非常危险，因为可能出现不可预测的结果。大多数时候我们只需要使用Cats中已经实现的instance，当然你最好去看一下它们的源码，了解一下它们背后的实现。
 
 #### ****2.2 Defini􏰁on of a Semigroup
 
